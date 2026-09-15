@@ -1,0 +1,2154 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="description" content="Cashflow-Rechner für Kapitalanleger by @immo.cousins – berechne in unter einer Minute, was nach Steuern von deiner Immobilie übrig bleibt.">
+<meta name="robots" content="index,follow">
+<title>Cashflow-Rechner für Kapitalanleger | immo.cousins</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230F5C55'/><text x='16' y='23' text-anchor='middle' font-family='system-ui,sans-serif' font-size='19' font-weight='700' fill='%23E8B84B'>&#8364;</text></svg>">
+<style>
+/* ============================================================
+   Design-Tokens (Farben aus der Excel-Vorlage übernommen)
+   ============================================================ */
+:root{
+  --petrol-900:#0F5C55;
+  --petrol-700:#12776D;
+  --mint-300:#8FDCD2;
+  --mint-100:#CFEFEC;
+  --mint-050:#EDFAF8;
+  --gold-500:#E8B84B;
+  --gold-300:#F3D48F;
+  --gold-050:#FBF0DA;
+  --coral-300:#F2A38B;
+  /* Textfarbe auf Gold-/Koralle-Flächen: petrol-900 erreicht dort nur 4,25:1 */
+  --auf-gold:#0C4B45;
+  --rot-warn:#B00020;
+  --grau-900:#3A3A3A;
+  /* #7A7A7A / #8A8A8A aus der Excel-Vorlage verfehlen WCAG AA (4,29:1 bzw.
+     3,45:1). Auf die nächstliegenden Werte abgedunkelt, die auf allen hier
+     verwendeten Hintergründen mindestens 4,5:1 erreichen. */
+  --grau-600:#666666;
+  --grau-400:#757575;
+  --flaeche:#F2F2F2;
+  --weiss:#FFFFFF;
+
+  --radius:16px;
+  --radius-sm:10px;
+  --schatten:0 1px 2px rgba(15,92,85,.04), 0 6px 18px rgba(15,92,85,.07);
+  --bar-h:64px;
+  --font:"Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+
+html{
+  -webkit-text-size-adjust:100%;
+  scroll-behavior:smooth;
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+}
+
+body{
+  margin:0;
+  font-family:var(--font);
+  font-size:16px;
+  line-height:1.55;
+  color:var(--grau-900);
+  background:var(--weiss);
+  /* Platz für die Sticky-Bar, damit sie nie Inhalte verdeckt */
+  padding-bottom:calc(var(--bar-h) + env(safe-area-inset-bottom) + 16px);
+  overflow-x:hidden;
+}
+body.bar-aus{padding-bottom:24px}
+
+.wrap{
+  max-width:720px;
+  margin:0 auto;
+  padding:0 16px;
+}
+
+h1,h2,h3{color:var(--petrol-900);line-height:1.25;margin:0}
+h1{font-size:1.75rem;letter-spacing:-.01em}
+h2{font-size:1.125rem}
+h3{font-size:1rem}
+p{margin:0 0 12px}
+a{color:var(--petrol-700)}
+
+/* Zahlen springen beim Live-Update nicht */
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+
+/* ============================================================
+   Hero
+   ============================================================ */
+.hero{text-align:center;padding:28px 0 20px}
+.hero img{
+  width:140px;height:140px;
+  max-width:140px;
+  border-radius:50%;
+  display:block;margin:0 auto 16px;
+  background:var(--mint-050);
+  object-fit:cover;
+}
+.hero .sub{
+  color:var(--petrol-700);font-weight:600;margin:6px 0 10px;font-size:.95rem;
+}
+.hero .claim{color:var(--grau-600);max-width:34em;margin:0 auto 20px}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:48px;padding:12px 22px;
+  border-radius:999px;border:1px solid transparent;
+  font:inherit;font-weight:650;
+  cursor:pointer;text-decoration:none;
+  transition:background .15s ease, border-color .15s ease;
+}
+.btn-primary{background:var(--gold-500);color:var(--auf-gold);border-color:var(--gold-500)}
+.btn-primary:hover{background:var(--gold-300)}
+.btn-sekundaer{background:var(--weiss);color:var(--petrol-900);border-color:var(--mint-300)}
+.btn-tuerkis{background:var(--petrol-700);color:var(--weiss);border-color:var(--petrol-700)}
+.btn-tuerkis:hover{background:var(--petrol-900);border-color:var(--petrol-900)}
+.btn-sekundaer:hover{background:var(--mint-050)}
+.btn-block{display:flex;width:100%}
+
+/* ============================================================
+   Intro (einklappbar)
+   ============================================================ */
+.intro{
+  background:var(--mint-050);
+  border:1px solid var(--mint-300);
+  border-radius:var(--radius);
+  padding:18px 16px;margin:8px 0 24px;
+}
+.intro h2{margin-bottom:10px}
+.intro-text{color:var(--grau-900);margin:0}
+.intro-text.gekuerzt{
+  display:-webkit-box;-webkit-line-clamp:3;line-clamp:3;-webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.intro-toggle{
+  background:none;border:0;padding:10px 0 0;margin:0;
+  color:var(--petrol-700);font:inherit;font-weight:650;cursor:pointer;
+  min-height:44px;
+}
+
+/* ============================================================
+   Karten & Sektionen
+   ============================================================ */
+.karte{
+  background:var(--weiss);
+  border:1px solid var(--mint-300);
+  border-radius:var(--radius);
+  box-shadow:var(--schatten);
+  margin:0 0 20px;
+  overflow:hidden;
+}
+.sec-head{
+  display:flex;align-items:center;gap:10px;
+  background:var(--mint-100);
+  color:var(--petrol-900);
+  padding:12px 16px;
+  font-weight:700;font-size:.8125rem;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.sec-head .nr{
+  font-variant-numeric:tabular-nums;
+  opacity:.85;
+}
+.karte-body{padding:16px}
+
+.block-hinweis{
+  background:var(--mint-050);
+  border-left:3px solid var(--mint-300);
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  padding:10px 12px;margin:0 0 16px;
+  color:var(--grau-600);font-size:.8125rem;line-height:1.5;
+}
+
+/* ============================================================
+   Formularfelder
+   ============================================================ */
+.feld{margin:0 0 16px}
+.feld:last-child{margin-bottom:0}
+.feld-kopf{
+  display:flex;align-items:center;gap:6px;
+  margin:0 0 6px;flex-wrap:wrap;
+}
+.feld label{
+  font-size:.875rem;font-weight:600;color:var(--petrol-900);
+}
+.info{
+  -webkit-appearance:none;appearance:none;
+  background:var(--mint-100);color:var(--petrol-900);
+  border:0;border-radius:50%;
+  width:22px;height:22px;min-width:22px;
+  font:inherit;font-size:.75rem;font-weight:700;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+  cursor:pointer;position:relative;flex:0 0 auto;
+}
+/* Tap-Ziel auf 44x44 vergrößern, ohne das Layout zu sprengen */
+.info::after{
+  content:"";position:absolute;top:50%;left:50%;
+  width:44px;height:44px;transform:translate(-50%,-50%);
+}
+.info:hover{background:var(--mint-300)}
+.info:focus-visible,
+.btn:focus-visible,
+.intro-toggle:focus-visible,
+input:focus-visible,
+.ek-auto-link:focus-visible,
+.sticky-bar:focus-visible{
+  outline:2px solid var(--petrol-700);outline-offset:2px;
+}
+
+.inp{position:relative;display:block}
+.inp input{
+  -webkit-appearance:none;appearance:none;
+  width:100%;
+  /* Mindestens 16px – sonst zoomt iOS Safari beim Fokus hinein */
+  font-family:inherit;font-size:16px;line-height:1.4;
+  font-variant-numeric:tabular-nums;
+  color:var(--grau-900);
+  background:var(--flaeche);
+  border:1px solid transparent;
+  border-radius:var(--radius-sm);
+  padding:13px 56px 13px 14px;
+  min-height:48px;
+}
+.inp input::placeholder{color:var(--grau-400)}
+.inp input:focus{
+  background:var(--weiss);
+  border-color:var(--mint-300);
+}
+.inp .suffix{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  color:var(--grau-600);font-size:.875rem;pointer-events:none;
+  font-variant-numeric:tabular-nums;
+}
+.inp.weit input{padding-right:78px}
+.inp input.ist-auto{
+  background:var(--mint-050);
+  border-style:dashed;border-color:var(--mint-300);
+  color:var(--petrol-700);font-weight:600;
+}
+.feld-fuss{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  margin-top:6px;flex-wrap:wrap;
+}
+.hilfe{color:var(--grau-600);font-size:.75rem;line-height:1.5;margin:0}
+.hilfe.warn{color:var(--rot-warn);font-weight:600}
+.feld-fehler{
+  color:var(--rot-warn);font-size:.75rem;line-height:1.5;margin:6px 0 0;
+}
+.feld-fehler:empty{display:none}
+.ek-auto-link{
+  background:none;border:0;padding:4px 0;margin:0;
+  color:var(--petrol-700);font:inherit;font-size:.75rem;font-weight:650;
+  cursor:pointer;white-space:nowrap;
+}
+.ek-auto-link[hidden]{display:none}
+
+/* Berechnete (nicht editierbare) Zeilen */
+.calc-zeile{
+  display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  padding:11px 0;
+  border-top:1px dashed var(--mint-300);
+}
+.calc-zeile:first-child{border-top:0}
+.calc-zeile .k{color:var(--grau-600);font-size:.8125rem;min-width:0}
+.calc-zeile .v{
+  color:var(--petrol-900);font-weight:700;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.calc-zeile.stark{
+  background:var(--mint-050);
+  margin:10px -16px -16px;padding:14px 16px;
+  border-top:1px solid var(--mint-300);
+}
+.calc-zeile.stark .k{color:var(--petrol-900);font-weight:650;font-size:.875rem}
+.calc-zeile.stark .v{font-size:1.0625rem}
+.calc-zeile.inaktiv .k,
+.calc-zeile.inaktiv .v{color:var(--grau-400);font-weight:600}
+
+/* ============================================================
+   Ergebnis-Panel
+   ============================================================ */
+.ergebnis{
+  background:var(--mint-050);
+  border:1px solid var(--mint-300);
+  border-radius:var(--radius);
+  box-shadow:var(--schatten);
+  padding:16px;margin:0 0 24px;
+}
+.ergebnis h2{font-size:.8125rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
+.kpi-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;margin:0 0 14px;
+}
+.kpi{
+  background:var(--weiss);
+  border:1px solid var(--mint-300);
+  border-radius:var(--radius-sm);
+  padding:10px 8px;text-align:center;min-width:0;
+}
+.kpi .k{
+  display:block;color:var(--grau-600);font-size:.6875rem;line-height:1.3;
+  margin-bottom:4px;
+}
+.kpi .v{
+  display:block;color:var(--petrol-900);font-weight:700;font-size:1rem;
+  font-variant-numeric:tabular-nums;overflow-wrap:anywhere;
+}
+.cf-zeile{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 0;border-top:1px dashed var(--mint-300);
+}
+.cf-zeile .k{color:var(--grau-900);font-size:.875rem;min-width:0}
+.cf-zeile .v{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--petrol-900)}
+.cf-haupt{
+  border-top:1px solid var(--mint-300);
+  margin-top:6px;padding-top:14px;
+}
+.cf-haupt .k{font-weight:700;color:var(--petrol-900);font-size:.9375rem}
+.badge{
+  display:inline-flex;align-items:center;gap:8px;
+  border-radius:999px;padding:8px 14px;
+  color:var(--auf-gold);font-weight:800;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+  font-size:1.0625rem;
+}
+.badge.plus{background:var(--gold-500)}
+.badge.minus{background:var(--coral-300)}
+.badge .emoji{font-size:1.125rem;line-height:1}
+
+/* Block 06 – Hauptausgabe */
+.cf-gross{
+  text-align:center;padding:6px 0 4px;
+}
+.cf-gross .label{display:block;color:var(--grau-600);font-size:.8125rem;margin-bottom:10px}
+.cf-gross .badge{font-size:1.625rem;padding:12px 20px}
+.cf-gross .badge .emoji{font-size:1.5rem}
+.cf-gross .jahr{display:block;margin-top:12px;color:var(--grau-600);font-size:.875rem}
+.cf-gross .jahr b{color:var(--petrol-900);font-variant-numeric:tabular-nums}
+
+/* Sehr schmale Geräte (320 px): Kennzahlen etwas kleiner, damit
+   "3.091 €" nicht zwischen Zahl und Einheit umbricht */
+@media (max-width:360px){
+  .kpi{padding:9px 5px}
+  .kpi .k{font-size:.625rem}
+  .kpi .v{font-size:.8125rem}
+}
+
+/* ============================================================
+   Block 04 – Positionstabelle (mobil gestapelte Zeilen-Karten)
+   ============================================================ */
+.pos-kopf{display:none}
+.pos{
+  border-top:1px solid var(--mint-300);
+  padding:12px 0;
+}
+.pos:first-of-type{border-top:0;padding-top:0}
+.pos-name{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  font-size:.875rem;font-weight:650;color:var(--petrol-900);margin-bottom:8px;
+}
+.pos-werte{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+}
+.pos-wert{min-width:0}
+.pos-wert .k{
+  display:block;color:var(--grau-600);font-size:.6875rem;line-height:1.3;margin-bottom:2px;
+}
+.pos-wert .v{
+  display:block;color:var(--grau-900);font-weight:650;font-size:.875rem;
+  font-variant-numeric:tabular-nums;overflow-wrap:anywhere;
+}
+.pos.inaktiv .pos-name,
+.pos.inaktiv .pos-wert .v{color:var(--grau-400)}
+.pos-note{
+  color:var(--grau-600);font-size:.75rem;margin:6px 0 0;line-height:1.45;
+}
+.pos.summe{
+  background:var(--mint-050);
+  margin:10px -16px -16px;padding:14px 16px;
+  border-top:1px solid var(--mint-300);
+}
+.pos.summe .pos-name{margin-bottom:6px}
+
+/* Mobil: Zeilen ohne echten Satz zeigen keine leere "Satz p. a."-Zelle */
+.pos.ohne-satz .pos-werte{grid-template-columns:repeat(2,minmax(0,1fr))}
+.pos.ohne-satz .pos-wert.satz{display:none}
+
+@media (min-width:600px){
+  .pos-kopf{
+    display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr));
+    gap:10px;padding:0 0 8px;
+    color:var(--grau-600);font-size:.6875rem;text-transform:uppercase;letter-spacing:.04em;
+  }
+  .pos-kopf span:not(:first-child),
+  .pos{align-items:baseline}
+  .pos-kopf span:not(:first-child){text-align:right}
+  .pos{
+    display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr));
+    gap:10px;
+  }
+  .pos-name{margin:0}
+  .pos-werte{display:contents}
+  .pos-wert{text-align:right}
+  .pos-wert .k{display:none}
+  .pos-note{grid-column:1 / -1;margin-top:0}
+  .pos.summe{display:grid}
+  .pos.ohne-satz .pos-werte{display:contents}
+  .pos.ohne-satz .pos-wert.satz{display:block}
+}
+
+/* ============================================================
+   Break-even
+   ============================================================ */
+.be-grid{display:grid;gap:12px}
+.be{
+  background:var(--gold-050);
+  border:1px solid var(--gold-300);
+  border-radius:var(--radius-sm);
+  padding:14px;
+}
+.be .k{display:block;color:var(--grau-600);font-size:.8125rem;margin-bottom:4px}
+.be .v{
+  display:block;color:var(--petrol-900);font-weight:800;font-size:1.25rem;
+  font-variant-numeric:tabular-nums;overflow-wrap:anywhere;
+}
+.be .v.leer{font-size:.9375rem;font-weight:650;color:var(--grau-600)}
+.be .fuss{display:block;margin-top:8px;color:var(--grau-600);font-size:.75rem;line-height:1.45}
+.be .fuss[hidden]{display:none}
+
+/* ============================================================
+   Hinweise, CTA, Footer
+   ============================================================ */
+.hinweise{
+  background:var(--flaeche);
+  border-radius:var(--radius);
+  padding:16px;margin:0 0 24px;
+  color:var(--grau-600);font-size:.8125rem;line-height:1.6;
+}
+.hinweise h2{font-size:.9375rem;margin-bottom:10px}
+.hinweise ul{margin:0 0 12px;padding-left:1.2em}
+.hinweise li{margin-bottom:6px}
+.hinweise .disclaimer{
+  margin:0;padding-top:12px;border-top:1px solid #E2E2E2;color:var(--grau-900);
+}
+/* Termin-CTA: der Abschluss des Rechners, direkt nach dem Break-even */
+.termin{
+  background:var(--mint-100);
+  border:1px solid var(--mint-300);
+  border-radius:var(--radius);
+  padding:22px 18px;margin:0 0 20px;
+  text-align:center;
+}
+.termin h2{font-size:1.1875rem;margin:0 0 8px;text-wrap:balance}
+.termin p{
+  color:var(--grau-900);margin:0 auto 16px;max-width:34em;
+  font-size:.9375rem;line-height:1.55;
+}
+.termin .btn{max-width:26rem;margin:0 auto}
+
+.aktionen{display:grid;gap:10px;margin:0 0 12px}
+@media (min-width:480px){
+  .aktionen{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.reset-zeile{text-align:center;margin:0 0 24px}
+.reset-link{
+  background:none;border:0;margin:0;padding:10px 12px;min-height:44px;
+  color:var(--grau-600);font:inherit;font-size:.8125rem;
+  text-decoration:underline;cursor:pointer;
+}
+.reset-link:hover{color:var(--petrol-700)}
+.reset-link:focus-visible{outline:2px solid var(--petrol-700);outline-offset:2px}
+.merken{
+  display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;
+  background:var(--flaeche);
+  border-radius:var(--radius);
+  padding:14px 16px;margin:0 0 24px;
+}
+.merken input[type=checkbox]{
+  width:22px;height:22px;margin:0;accent-color:var(--petrol-700);cursor:pointer;
+  position:relative;
+}
+/* Tap-Ziel auf 44x44 vergrößern, ohne das Layout zu sprengen */
+.merken input[type=checkbox]::after{
+  content:"";position:absolute;top:50%;left:50%;
+  width:44px;height:44px;transform:translate(-50%,-50%);
+}
+.merken label{
+  font-size:.9375rem;font-weight:600;color:var(--petrol-900);cursor:pointer;
+}
+.merken .merken-hilfe{
+  grid-column:2;margin:0;color:var(--grau-600);font-size:.75rem;line-height:1.5;
+}
+
+.cta{
+  background:var(--petrol-900);
+  border-radius:var(--radius);
+  padding:24px 18px;margin:0 0 24px;
+  text-align:center;color:var(--weiss);
+}
+.cta h2{color:var(--weiss);margin-bottom:14px;font-size:1.25rem}
+footer{
+  text-align:center;color:var(--grau-600);font-size:.75rem;
+  padding:0 0 32px;
+}
+footer a{color:var(--grau-600);margin:0 8px;display:inline-block;padding:10px 0}
+@media print{
+  footer a{padding:0;margin:0 6px 0 0}
+  footer a::after{content:" (" attr(href) ")";color:var(--grau-600)}
+}
+
+/* ============================================================
+   Sticky-Bar
+   ============================================================ */
+.sticky-bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  width:100%;
+  min-height:var(--bar-h);
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+  background:var(--weiss);
+  border:0;border-top:1px solid var(--mint-300);
+  box-shadow:0 -4px 20px rgba(15,92,85,.10);
+  font:inherit;text-align:left;cursor:pointer;
+  transform:translateY(0);
+  transition:transform .18s ease;
+}
+.sticky-bar[hidden]{display:none}
+.sticky-bar.weg{transform:translateY(110%)}
+.sticky-bar .k{
+  color:var(--grau-600);font-size:.75rem;line-height:1.3;min-width:0;
+}
+.sticky-bar .k b{display:block;color:var(--petrol-900);font-size:.8125rem;font-weight:700}
+.sticky-bar .rechts{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.sticky-bar .badge{font-size:1.0625rem;padding:7px 13px}
+.sticky-bar .pfeil{color:var(--grau-400);font-size:.875rem}
+@media (prefers-reduced-motion:reduce){
+  .sticky-bar{transition:none}
+}
+
+/* ============================================================
+   Bottom-Sheets
+   ============================================================ */
+.sheet{
+  position:fixed;inset:0;z-index:60;
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.sheet[hidden]{display:none}
+.sheet-backdrop{
+  position:absolute;inset:0;background:rgba(15,92,85,.45);
+  border:0;padding:0;margin:0;width:100%;cursor:pointer;
+}
+.sheet-panel{
+  position:relative;
+  width:100%;max-width:720px;max-height:85vh;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  background:var(--weiss);
+  border-radius:20px 20px 0 0;
+  padding:20px 16px calc(20px + env(safe-area-inset-bottom));
+  box-shadow:0 -8px 40px rgba(15,92,85,.25);
+  animation:hoch .2s ease;
+}
+@keyframes hoch{from{transform:translateY(18px);opacity:.6}to{transform:translateY(0);opacity:1}}
+@media (prefers-reduced-motion:reduce){
+  .sheet-panel{animation:none}
+}
+@media (min-width:720px){
+  .sheet{align-items:center}
+  .sheet-panel{border-radius:20px;max-height:80vh}
+}
+.sheet-kopf{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  margin:0 0 10px;
+}
+.sheet-kopf h2{font-size:1.0625rem}
+.sheet-zu{
+  -webkit-appearance:none;appearance:none;
+  background:var(--flaeche);border:0;border-radius:50%;
+  width:44px;height:44px;min-width:44px;
+  font-size:1.125rem;line-height:1;color:var(--grau-900);cursor:pointer;
+}
+.sheet-zu:hover{background:var(--mint-100)}
+.sheet-text{color:var(--grau-900);font-size:.9375rem;line-height:1.6;margin:0}
+
+/* Toast */
+.toast{
+  position:fixed;left:50%;bottom:calc(var(--bar-h) + env(safe-area-inset-bottom) + 16px);
+  transform:translateX(-50%);
+  z-index:70;
+  background:var(--petrol-900);color:var(--weiss);
+  padding:11px 18px;border-radius:999px;
+  font-size:.875rem;font-weight:600;
+  box-shadow:0 6px 24px rgba(15,92,85,.3);
+  opacity:0;pointer-events:none;transition:opacity .18s ease;
+}
+.toast.an{opacity:1}
+@media (prefers-reduced-motion:reduce){
+  .toast{transition:none}
+}
+
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
+
+/* ============================================================
+   Druck / PDF
+   ============================================================ */
+@media print{
+  @page{margin:12mm}
+  body{padding:0;background:#fff;font-size:10.5pt}
+  .hero img,.sticky-bar,.aktionen,.reset-zeile,.merken,.cta,.intro-toggle,.info,.sheet,.toast{display:none !important}
+  .termin{background:#fff;border:1px solid #BBB;text-align:left;padding:10px;break-inside:avoid}
+  .termin h2{font-size:1rem}
+  .termin .btn{
+    background:none !important;border:0;padding:0;min-height:0;
+    display:inline;font-weight:700;color:#000 !important;max-width:none;
+  }
+  .termin .btn::after{content:" (" attr(href) ")";font-weight:400}
+  .hero{padding:0 0 8px;text-align:left}
+  .intro,.hinweise{background:#fff;border:0;padding:0;margin:0 0 8px}
+  .intro-text.gekuerzt{-webkit-line-clamp:unset;line-clamp:unset;display:block}
+  .intro{display:none}
+  .karte,.ergebnis{
+    box-shadow:none;border:1px solid #BBB;break-inside:avoid;page-break-inside:avoid;
+    margin-bottom:8px;
+  }
+  .sec-head{background:#EEE;padding:6px 10px}
+  .karte-body,.ergebnis{padding:10px}
+  .badge{background:none !important;padding:0;font-size:1.1rem}
+  .block-hinweis,.pos-note{display:none}
+  .wrap{max-width:none;padding:0}
+  .inp input{border:1px solid #CCC;background:#fff;padding:6px 8px;min-height:0}
+  .feld{margin-bottom:8px}
+}
+</style>
+</head>
+<body>
+
+<main class="wrap">
+
+  <!-- ===================== Hero ===================== -->
+  <header class="hero">
+    <img src="immo-cousins-hero.png" width="140" height="140"
+         alt="Die immo.cousins – zwei Immobilien-Investoren aus Köln">
+    <h1>Cashflow-Rechner für Kapitalanleger</h1>
+    <p class="sub">by @immo.cousins</p>
+    <p class="claim">Steueroptimierter Vermögensaufbau mit Immobilien – trag deine Zahlen ein und leg direkt los!</p>
+    <a class="btn btn-primary" href="#block01">Jetzt berechnen ↓</a>
+  </header>
+
+  <!-- ===================== Intro ===================== -->
+  <section class="intro">
+    <h2>Warum dieser Rechner für deine Kaufentscheidung entscheidend ist</h2>
+    <p class="intro-text gekuerzt" id="introText">Die meisten Kaufentscheidungen bei Immobilien als Kapitalanlage werden nach Bauchgefühl getroffen: Kaufpreisfaktor über den Daumen gepeilt, Finanzierung grob geschätzt, Steuervorteile komplett ignoriert. Das Ergebnis – Investoren zahlen zu viel oder lassen Objekte liegen, die sich eigentlich rechnen. Dieser Rechner zeigt dir in wenigen Minuten, was am Ende wirklich übrig bleibt – Monat für Monat, vor UND nach Steuern. Denn genau die Steueroptimierung (AfA, Zinsabzug, Grenzsteuersatz) entscheidet oft darüber, ob eine Immobilie ein Verlustgeschäft oder ein cleverer Baustein für deinen Vermögensaufbau ist. Trag unten deine Zahlen ein – und triff deine nächste Kaufentscheidung mit echten Zahlen statt Bauchgefühl.</p>
+    <button type="button" class="intro-toggle" id="introToggle" aria-expanded="false" aria-controls="introText">Mehr lesen</button>
+  </section>
+
+  <!-- ===================== Ergebnis-Panel ===================== -->
+  <section class="ergebnis" id="ergebnisPanel" aria-labelledby="ergebnisTitel">
+    <h2 id="ergebnisTitel">Dein Ergebnis</h2>
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <span class="k">Bruttorendite</span>
+        <span class="v num" data-out="bruttorendite">—</span>
+      </div>
+      <div class="kpi">
+        <span class="k">Kaufpreis-Faktor</span>
+        <span class="v num" data-out="kaufpreisFaktor">—</span>
+      </div>
+      <div class="kpi">
+        <span class="k">Kaufpreis pro m²</span>
+        <span class="v num" data-out="kaufpreisProQm">—</span>
+      </div>
+    </div>
+
+    <div class="cf-zeile">
+      <span class="k">Cashflow VOR Steuern / Monat:</span>
+      <span class="v num" data-out="cfVorMonat">—</span>
+    </div>
+    <div class="cf-zeile cf-haupt">
+      <span class="k" data-label="cfNachMonat">Cashflow NACH Steuern / Monat:</span>
+      <span class="badge plus" data-badge="cfNachMonat">
+        <span class="emoji" data-out="emoji" aria-hidden="true">🤑</span>
+        <span class="num" data-out="cfNachMonat">—</span>
+      </span>
+    </div>
+    <div class="cf-zeile">
+      <span class="k" data-label="cfNachJahr">Cashflow NACH Steuern / Jahr:</span>
+      <span class="v num" data-out="cfNachJahr">—</span>
+    </div>
+
+    <p class="sr-only" id="liveRegion" aria-live="polite" aria-atomic="true"></p>
+  </section>
+
+  <!-- ===================== 01 Objektdaten ===================== -->
+  <section class="karte" id="block01" aria-labelledby="h01">
+    <h2 class="sec-head" id="h01"><span class="nr">01</span> <span aria-hidden="true">🏠</span> Objektdaten</h2>
+    <div class="karte-body">
+
+      <div class="feld">
+        <div class="feld-kopf"><label for="objekt">Objekt / Adresse</label></div>
+        <span class="inp">
+          <input type="text" id="objekt" data-feld="objekt" autocomplete="off"
+                 enterkeyhint="done" placeholder="Musterstraße 12, 50667 Köln">
+        </span>
+        <p class="hilfe">Optional – dient nur als Notiz und fließt nicht in die Berechnung ein.</p>
+      </div>
+
+      <div class="feld">
+        <div class="feld-kopf"><label for="groesse">Größe</label></div>
+        <span class="inp">
+          <input type="text" id="groesse" data-feld="groesse" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">m²</span>
+        </span>
+        <p class="feld-fehler" data-fehler="groesse" role="status"></p>
+      </div>
+
+      <div class="feld">
+        <div class="feld-kopf"><label for="kaufpreis">Kaufpreis, exkl. Nebenkosten</label></div>
+        <span class="inp">
+          <input type="text" id="kaufpreis" data-feld="kaufpreis" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">€</span>
+        </span>
+        <p class="feld-fehler" data-fehler="kaufpreis" role="status"></p>
+      </div>
+
+      <div class="feld">
+        <div class="feld-kopf"><label for="kaltmieteMonat">Kaltmiete pro Monat</label></div>
+        <span class="inp">
+          <input type="text" id="kaltmieteMonat" data-feld="kaltmieteMonat" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">€</span>
+        </span>
+        <p class="feld-fehler" data-fehler="kaltmieteMonat" role="status"></p>
+      </div>
+
+      <div class="calc-zeile">
+        <span class="k">Kaltmiete pro Jahr</span>
+        <span class="v num" data-out="kaltmieteJahr">—</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== 02 Anschaffungsnebenkosten ===================== -->
+  <section class="karte" aria-labelledby="h02">
+    <h2 class="sec-head" id="h02"><span class="nr">02</span> <span aria-hidden="true">💰</span> Anschaffungsnebenkosten</h2>
+    <div class="karte-body">
+
+      <div class="feld">
+        <div class="feld-kopf"><label for="maklerSatz">Maklercourtage</label></div>
+        <span class="inp weit">
+          <input type="text" id="maklerSatz" data-feld="maklerSatz" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">%</span>
+        </span>
+        <div class="feld-fuss">
+          <p class="hilfe">Anteil vom Kaufpreis</p>
+          <p class="hilfe num"><b data-out="maklerBetrag">—</b></p>
+        </div>
+        <p class="feld-fehler" data-fehler="maklerSatz" role="status"></p>
+      </div>
+
+      <div class="feld">
+        <div class="feld-kopf"><label for="notarSatz">Notar &amp; Grundbuch</label></div>
+        <span class="inp weit">
+          <input type="text" id="notarSatz" data-feld="notarSatz" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">%</span>
+        </span>
+        <div class="feld-fuss">
+          <p class="hilfe">Anteil vom Kaufpreis</p>
+          <p class="hilfe num"><b data-out="notarBetrag">—</b></p>
+        </div>
+        <p class="feld-fehler" data-fehler="notarSatz" role="status"></p>
+      </div>
+
+      <div class="feld">
+        <div class="feld-kopf"><label for="grestSatz">Grunderwerbsteuer</label></div>
+        <span class="inp weit">
+          <input type="text" id="grestSatz" data-feld="grestSatz" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">%</span>
+        </span>
+        <div class="feld-fuss">
+          <p class="hilfe">Anteil vom Kaufpreis</p>
+          <p class="hilfe num"><b data-out="grestBetrag">—</b></p>
+        </div>
+        <p class="feld-fehler" data-fehler="grestSatz" role="status"></p>
+      </div>
+
+      <div class="feld">
+        <div class="feld-kopf"><label for="zusatzkosten">Zusätzliche Kosten (Sanierung o. Ä.)</label></div>
+        <span class="inp">
+          <input type="text" id="zusatzkosten" data-feld="zusatzkosten" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">€</span>
+        </span>
+        <p class="hilfe" data-out="zusatzHinweis">Optional: z. B. Küche, Elektrik, Renovierung direkt nach Kauf.</p>
+        <p class="feld-fehler" data-fehler="zusatzkosten" role="status"></p>
+      </div>
+
+      <div class="calc-zeile">
+        <span class="k">Nebenkosten gesamt (<span class="num" data-out="nkSatz">—</span>)</span>
+        <span class="v num" data-out="nkBetrag">—</span>
+      </div>
+      <div class="calc-zeile stark">
+        <span class="k">Kaufpreis, inkl. Nebenkosten</span>
+        <span class="v num" data-out="kaufpreisInklNK">—</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== 03 Finanzierung ===================== -->
+  <section class="karte" aria-labelledby="h03">
+    <h2 class="sec-head" id="h03"><span class="nr">03</span> <span aria-hidden="true">🏦</span> Finanzierung</h2>
+    <div class="karte-body">
+
+      <p class="block-hinweis">Annahme: Dein Eigenkapital deckt die Anschaffungsnebenkosten (Courtage, Notar, Grunderwerbsteuer) ab. Die zusätzlichen Kosten (Sanierung o. Ä.) werden standardmäßig über das Fremdkapital mitfinanziert.</p>
+
+      <div class="feld">
+        <div class="feld-kopf">
+          <label for="eigenkapital">Eigenkapital</label>
+          <button type="button" class="info" data-hilfe="eigenkapital"
+                  aria-label="Erklärung zu Eigenkapital anzeigen">i</button>
+        </div>
+        <span class="inp">
+          <input type="text" id="eigenkapital" data-feld="eigenkapital" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">€</span>
+        </span>
+        <div class="feld-fuss">
+          <p class="hilfe" data-out="ekModus">Automatisch: deckt die Anschaffungsnebenkosten ab.</p>
+          <button type="button" class="ek-auto-link" id="ekAutoLink" hidden>↺ Auto</button>
+        </div>
+        <p class="feld-fehler" data-fehler="eigenkapital" role="status"></p>
+      </div>
+
+      <div class="calc-zeile stark">
+        <span class="k">Fremdkapital</span>
+        <span class="v num" data-out="fremdkapital">—</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== 04 Laufende Einnahmen & Kosten ===================== -->
+  <section class="karte" aria-labelledby="h04">
+    <h2 class="sec-head" id="h04"><span class="nr">04</span> <span aria-hidden="true">📊</span> Laufende Einnahmen &amp; Kosten</h2>
+    <div class="karte-body">
+
+      <p class="block-hinweis">Instandhaltungsrücklage &amp; Mietausfallwagnis stehen per Default auf 0 – Instandhaltung steckt üblicherweise schon in den nicht umlegbaren Nebenkosten (zusammen mit der Verwaltergebühr), und in A-Lagen ist Mietausfall selten ein Thema. Passe beides an, wenn deine Lage/dein Objekt es nötig macht.</p>
+
+      <div class="feld">
+        <div class="feld-kopf">
+          <label for="hausgeldGesamt">Hausgeld gesamt (WEG)</label>
+          <button type="button" class="info" data-hilfe="hausgeldGesamt"
+                  aria-label="Erklärung zu Hausgeld gesamt anzeigen">i</button>
+        </div>
+        <span class="inp weit">
+          <input type="text" id="hausgeldGesamt" data-feld="hausgeldGesamt" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">€/Mon.</span>
+        </span>
+        <p class="feld-fehler" data-fehler="hausgeldGesamt" role="status"></p>
+      </div>
+
+      <div class="feld">
+        <div class="feld-kopf">
+          <label for="hausgeldNichtUmlegbar">davon nicht umlegbarer Anteil</label>
+          <button type="button" class="info" data-hilfe="hausgeldNichtUmlegbar"
+                  aria-label="Erklärung zum nicht umlegbaren Anteil anzeigen">i</button>
+        </div>
+        <span class="inp weit">
+          <input type="text" id="hausgeldNichtUmlegbar" data-feld="hausgeldNichtUmlegbar" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">€/Mon.</span>
+        </span>
+        <p class="feld-fehler" data-fehler="hausgeldNichtUmlegbar" role="status"></p>
+      </div>
+
+      <div class="feld">
+        <div class="feld-kopf">
+          <label for="zinsSatz">Zinsen (Finanzierung)</label>
+          <button type="button" class="info" data-hilfe="zinsSatz"
+                  aria-label="Erklärung zum Zinssatz anzeigen">i</button>
+        </div>
+        <span class="inp weit">
+          <input type="text" id="zinsSatz" data-feld="zinsSatz" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">% p. a.</span>
+        </span>
+        <p class="feld-fehler" data-fehler="zinsSatz" role="status"></p>
+      </div>
+
+      <div class="feld">
+        <div class="feld-kopf">
+          <label for="tilgungSatz">Tilgung (Finanzierung)</label>
+          <button type="button" class="info" data-hilfe="tilgungSatz"
+                  aria-label="Erklärung zur Tilgung anzeigen">i</button>
+        </div>
+        <span class="inp weit">
+          <input type="text" id="tilgungSatz" data-feld="tilgungSatz" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">% p. a.</span>
+        </span>
+        <p class="feld-fehler" data-fehler="tilgungSatz" role="status"></p>
+      </div>
+
+      <div class="feld">
+        <div class="feld-kopf">
+          <label for="ihRuecklage">Instandhaltungsrücklage (zusätzlich)</label>
+          <button type="button" class="info" data-hilfe="ihRuecklage"
+                  aria-label="Erklärung zur Instandhaltungsrücklage anzeigen">i</button>
+        </div>
+        <span class="inp weit">
+          <input type="text" id="ihRuecklage" data-feld="ihRuecklage" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">€/m²</span>
+        </span>
+        <p class="hilfe">pro m² und Monat</p>
+        <p class="feld-fehler" data-fehler="ihRuecklage" role="status"></p>
+      </div>
+
+      <div class="feld">
+        <div class="feld-kopf">
+          <label for="mietausfall">Mietausfallwagnis</label>
+          <button type="button" class="info" data-hilfe="mietausfall"
+                  aria-label="Erklärung zum Mietausfallwagnis anzeigen">i</button>
+        </div>
+        <span class="inp weit">
+          <input type="text" id="mietausfall" data-feld="mietausfall" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">%</span>
+        </span>
+        <p class="hilfe">der Monatskaltmiete</p>
+        <p class="feld-fehler" data-fehler="mietausfall" role="status"></p>
+      </div>
+
+      <h3 class="sr-only">Übersicht der laufenden Positionen</h3>
+      <div class="pos-kopf" aria-hidden="true">
+        <span>Position</span><span>Satz p. a.</span><span>pro Monat</span><span>pro Jahr</span>
+      </div>
+
+      <div class="pos ohne-satz">
+        <div class="pos-name">Kaltmiete</div>
+        <div class="pos-werte">
+          <div class="pos-wert satz"><span class="k">Satz p. a.</span><span class="v">—</span></div>
+          <div class="pos-wert"><span class="k">pro Monat</span><span class="v num" data-out="posMieteM">—</span></div>
+          <div class="pos-wert"><span class="k">pro Jahr</span><span class="v num" data-out="posMieteJ">—</span></div>
+        </div>
+      </div>
+
+      <div class="pos inaktiv ohne-satz">
+        <div class="pos-name">Hausgeld gesamt (WEG)</div>
+        <div class="pos-werte">
+          <div class="pos-wert satz"><span class="k">Satz p. a.</span><span class="v">—</span></div>
+          <div class="pos-wert"><span class="k">pro Monat</span><span class="v num" data-out="posHgM">—</span></div>
+          <div class="pos-wert"><span class="k">pro Jahr</span><span class="v num" data-out="posHgJ">—</span></div>
+        </div>
+        <p class="pos-note">Nur zur Info – fließt nicht in den Cashflow ein, da die umlegbaren Kosten der Mieter trägt.</p>
+      </div>
+
+      <div class="pos ohne-satz">
+        <div class="pos-name">davon nicht umlegbar</div>
+        <div class="pos-werte">
+          <div class="pos-wert satz"><span class="k">Satz p. a.</span><span class="v">—</span></div>
+          <div class="pos-wert"><span class="k">pro Monat</span><span class="v num" data-out="posNuM">—</span></div>
+          <div class="pos-wert"><span class="k">pro Jahr</span><span class="v num" data-out="posNuJ">—</span></div>
+        </div>
+      </div>
+
+      <div class="pos">
+        <div class="pos-name">Zinsen</div>
+        <div class="pos-werte">
+          <div class="pos-wert satz"><span class="k">Satz p. a.</span><span class="v num" data-out="posZinsSatz">—</span></div>
+          <div class="pos-wert"><span class="k">pro Monat</span><span class="v num" data-out="posZinsM">—</span></div>
+          <div class="pos-wert"><span class="k">pro Jahr</span><span class="v num" data-out="posZinsJ">—</span></div>
+        </div>
+      </div>
+
+      <div class="pos">
+        <div class="pos-name">Tilgung</div>
+        <div class="pos-werte">
+          <div class="pos-wert satz"><span class="k">Satz p. a.</span><span class="v num" data-out="posTilgSatz">—</span></div>
+          <div class="pos-wert"><span class="k">pro Monat</span><span class="v num" data-out="posTilgM">—</span></div>
+          <div class="pos-wert"><span class="k">pro Jahr</span><span class="v num" data-out="posTilgJ">—</span></div>
+        </div>
+      </div>
+
+      <div class="pos">
+        <div class="pos-name">Instandhaltungsrücklage</div>
+        <div class="pos-werte">
+          <div class="pos-wert satz"><span class="k">Satz p. a.</span><span class="v num" data-out="posIhSatz">—</span></div>
+          <div class="pos-wert"><span class="k">pro Monat</span><span class="v num" data-out="posIhM">—</span></div>
+          <div class="pos-wert"><span class="k">pro Jahr</span><span class="v num" data-out="posIhJ">—</span></div>
+        </div>
+      </div>
+
+      <div class="pos">
+        <div class="pos-name">Mietausfallwagnis</div>
+        <div class="pos-werte">
+          <div class="pos-wert satz"><span class="k">Satz p. a.</span><span class="v num" data-out="posMaSatz">—</span></div>
+          <div class="pos-wert"><span class="k">pro Monat</span><span class="v num" data-out="posMaM">—</span></div>
+          <div class="pos-wert"><span class="k">pro Jahr</span><span class="v num" data-out="posMaJ">—</span></div>
+        </div>
+      </div>
+
+      <div class="pos summe ohne-satz">
+        <div class="pos-name">Cashflow vor Steuern</div>
+        <div class="pos-werte">
+          <div class="pos-wert satz"><span class="k">Satz p. a.</span><span class="v">—</span></div>
+          <div class="pos-wert"><span class="k">pro Monat</span><span class="v num" data-out="posCfVorM">—</span></div>
+          <div class="pos-wert"><span class="k">pro Jahr</span><span class="v num" data-out="posCfVorJ">—</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== 05 Steuerliche Berechnung ===================== -->
+  <section class="karte" aria-labelledby="h05">
+    <h2 class="sec-head" id="h05"><span class="nr">05</span> <span aria-hidden="true">🧾</span> Steuerliche Berechnung</h2>
+    <div class="karte-body">
+
+      <div class="feld">
+        <div class="feld-kopf">
+          <label for="gebaeudeanteil">Gebäudeanteil am Kaufpreis</label>
+          <button type="button" class="info" data-hilfe="gebaeudeanteil"
+                  aria-label="Erklärung zum Gebäudeanteil anzeigen">i</button>
+        </div>
+        <span class="inp weit">
+          <input type="text" id="gebaeudeanteil" data-feld="gebaeudeanteil" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">%</span>
+        </span>
+        <p class="feld-fehler" data-fehler="gebaeudeanteil" role="status"></p>
+      </div>
+
+      <div class="feld">
+        <div class="feld-kopf">
+          <label for="afaSatz">AfA-Satz p. a.</label>
+          <button type="button" class="info" data-hilfe="afaSatz"
+                  aria-label="Erklärung zum AfA-Satz anzeigen">i</button>
+        </div>
+        <span class="inp weit">
+          <input type="text" id="afaSatz" data-feld="afaSatz" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">%</span>
+        </span>
+        <p class="feld-fehler" data-fehler="afaSatz" role="status"></p>
+      </div>
+
+      <div class="feld">
+        <div class="feld-kopf">
+          <label for="grenzsteuersatz">Persönlicher Grenzsteuersatz</label>
+          <button type="button" class="info" data-hilfe="grenzsteuersatz"
+                  aria-label="Erklärung zum Grenzsteuersatz anzeigen">i</button>
+        </div>
+        <span class="inp weit">
+          <input type="text" id="grenzsteuersatz" data-feld="grenzsteuersatz" inputmode="decimal"
+                 enterkeyhint="done" autocomplete="off">
+          <span class="suffix" aria-hidden="true">%</span>
+        </span>
+        <p class="feld-fehler" data-fehler="grenzsteuersatz" role="status"></p>
+      </div>
+
+      <div class="calc-zeile">
+        <span class="k">Gebäudewert (AfA-Bemessungsgrundlage, inkl. NK)</span>
+        <span class="v num" data-out="gebaeudewert">—</span>
+      </div>
+      <div class="calc-zeile">
+        <span class="k">AfA / Monat</span>
+        <span class="v num" data-out="afaMonat">—</span>
+      </div>
+      <div class="calc-zeile">
+        <span class="k">AfA / Jahr</span>
+        <span class="v num" data-out="afaJahr">—</span>
+      </div>
+      <div class="calc-zeile">
+        <span class="k">Zu versteuerndes Ergebnis / Monat</span>
+        <span class="v num" data-out="zuVersteuernMonat">—</span>
+      </div>
+      <div class="calc-zeile stark">
+        <span class="k">
+          Steuern / Monat
+          <button type="button" class="info" data-hilfe="steuern"
+                  aria-label="Erklärung zur Steuerwirkung anzeigen">i</button>
+        </span>
+        <span class="v num" data-out="steuernMonat">—</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== 06 Cashflow ===================== -->
+  <section class="karte" aria-labelledby="h06">
+    <h2 class="sec-head" id="h06"><span class="nr">06</span> <span aria-hidden="true">🎉</span> Cashflow</h2>
+    <div class="karte-body">
+
+      <div class="calc-zeile">
+        <span class="k">Cashflow VOR Steuern / Monat</span>
+        <span class="v num" data-out="cfVorMonat">—</span>
+      </div>
+      <div class="calc-zeile">
+        <span class="k">Steuerwirkung / Monat</span>
+        <span class="v num" data-out="steuernMonat">—</span>
+      </div>
+
+      <div class="cf-gross">
+        <span class="label" data-label="cfNachMonatPlain">Cashflow NACH Steuern / Monat</span>
+        <span class="badge plus" data-badge="cfNachMonat">
+          <span class="emoji" data-out="emoji" aria-hidden="true">🤑</span>
+          <span class="num" data-out="cfNachMonat">—</span>
+        </span>
+        <span class="jahr"><span data-label="cfNachJahrKurz">Cashflow NACH Steuern / Jahr</span>: <b class="num" data-out="cfNachJahr">—</b></span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== 07 Break-even ===================== -->
+  <section class="karte" aria-labelledby="h07">
+    <h2 class="sec-head" id="h07"><span class="nr">07</span> <span aria-hidden="true">⚖️</span> Break-even-Analyse</h2>
+    <div class="karte-body">
+
+      <p class="block-hinweis">Ab welchem Wert wäre dein Cashflow nach Steuern bei 0 €?</p>
+
+      <div class="be-grid">
+        <div class="be">
+          <span class="k">Break-even Kaufpreis</span>
+          <span class="v num" data-out="beKaufpreis">—</span>
+          <span class="fuss" data-out="beKaufpreisFuss" hidden></span>
+        </div>
+        <div class="be">
+          <span class="k">Break-even Kaltmiete / Monat</span>
+          <span class="v num" data-out="beKaltmiete">—</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== Termin buchen ===================== -->
+  <section class="termin" aria-labelledby="hTermin">
+    <h2 id="hTermin">Zahlen stehen – schauen wir gemeinsam drauf?</h2>
+    <p>45 Minuten, kostenfrei und unverbindlich: Wir gehen dein Objekt zusammen durch – Finanzierung, Steuerhebel und ob der Kaufpreis wirklich trägt.</p>
+    <a class="btn btn-tuerkis btn-block" href="https://calendly.com/nikan-heimkauf/45min"
+       target="_blank" rel="noopener">Kostenfreien Termin buchen →</a>
+  </section>
+
+  <!-- ===================== Aktionen ===================== -->
+  <div class="aktionen">
+    <button type="button" class="btn btn-sekundaer" id="btnTeilen">🔗 Berechnung teilen</button>
+    <button type="button" class="btn btn-sekundaer" id="btnDrucken">🖨 Als PDF sichern</button>
+  </div>
+  <p class="reset-zeile">
+    <button type="button" class="reset-link" id="btnReset">↺ Beispielwerte wiederherstellen</button>
+  </p>
+
+  <div class="merken">
+    <input type="checkbox" id="merkenSchalter">
+    <label for="merkenSchalter">Eingaben auf diesem Gerät merken</label>
+    <p class="merken-hilfe">Aus datenschutzrechtlichen Gründen standardmäßig aus – ohne Häkchen speichert die Seite nichts. Aktiviert legt sie deine Eingaben nur lokal in deinem Browser ab, damit sie beim nächsten Besuch wieder da sind.</p>
+  </div>
+
+  <!-- ===================== Hinweise ===================== -->
+  <section class="hinweise" aria-labelledby="hHinweise">
+    <h2 id="hHinweise"><span aria-hidden="true">📌</span> Hinweise zu den Annahmen</h2>
+    <ul>
+      <li>Das <b>Hausgeld gesamt</b> ist eine reine Info-Angabe. In den Cashflow fließt nur der <b>nicht umlegbare Anteil</b> ein – die umlegbaren Kosten trägt der Mieter.</li>
+      <li>Die <b>Tilgung</b> mindert den Cashflow, ist aber kein steuerlicher Aufwand – sie ist Vermögensaufbau, keine Kosten.</li>
+      <li>Die <b>AfA-Bemessungsgrundlage</b> ist der Gebäudeanteil vom Kaufpreis <b>inkl.</b> Nebenkosten.</li>
+      <li><b>Bruttorendite</b> und <b>Kaufpreis-Faktor</b> beziehen sich auf den Kaufpreis <b>exkl.</b> Nebenkosten.</li>
+      <li>Gerechnet wird mit <b>konstanten Werten</b> – keine Mietsteigerung, keine Zinsbindung, kein Tilgungsplan, keine Wertsteigerung.</li>
+      <li>Es werden <b>keine Daten an einen Server gesendet</b> – kein Tracking, keine Cookies, keine Analyse. Gespeichert wird nur, wenn du oben „Eingaben auf diesem Gerät merken" aktivierst; die Werte bleiben dann ausschließlich in deinem Browser.</li>
+    </ul>
+    <p class="disclaimer">Dieses Tool dient der ersten Orientierung und ersetzt keine individuelle Steuer-, Rechts- oder Finanzierungsberatung.</p>
+  </section>
+
+  <!-- ===================== CTA ===================== -->
+  <section class="cta">
+    <h2>Brauchst du Hilfe oder findest kein geiles Objekt?</h2>
+    <a class="btn btn-primary" href="https://instagram.com/immo.cousins" target="_blank" rel="noopener">Schreib uns auf Instagram → @immo.cousins</a>
+  </section>
+
+  <footer>
+    <a href="https://heimkauf.de/impressum/" target="_blank" rel="noopener">Impressum</a> ·
+    <a href="https://heimkauf.de/privacy-policy/" target="_blank" rel="noopener">Datenschutz</a>
+    <p>© Heimkauf CGN GmbH · immo.cousins</p>
+  </footer>
+
+</main>
+
+<!-- ===================== Sticky-Bar ===================== -->
+<button type="button" class="sticky-bar" id="stickyBar" aria-haspopup="dialog">
+  <span class="k"><span data-label="stickyKurz">Cashflow nach Steuern</span><b data-label="stickyMonat">/ Monat</b></span>
+  <span class="rechts">
+    <span class="badge plus" data-badge="cfNachMonat">
+      <span class="emoji" data-out="emoji" aria-hidden="true">🤑</span>
+      <span class="num" data-out="cfNachMonat">—</span>
+    </span>
+    <span class="pfeil" aria-hidden="true">▲</span>
+  </span>
+</button>
+
+<!-- ===================== Sheet: Hilfetexte ===================== -->
+<div class="sheet" id="hilfeSheet" hidden role="dialog" aria-modal="true" aria-labelledby="hilfeTitel">
+  <button type="button" class="sheet-backdrop" data-sheet-zu aria-label="Schließen" tabindex="-1"></button>
+  <div class="sheet-panel">
+    <div class="sheet-kopf">
+      <h2 id="hilfeTitel">Hinweis</h2>
+      <button type="button" class="sheet-zu" data-sheet-zu aria-label="Hinweis schließen">✕</button>
+    </div>
+    <p class="sheet-text" id="hilfeText"></p>
+  </div>
+</div>
+
+<!-- ===================== Sheet: Ergebnis ===================== -->
+<div class="sheet" id="ergebnisSheet" hidden role="dialog" aria-modal="true" aria-labelledby="ergebnisSheetTitel">
+  <button type="button" class="sheet-backdrop" data-sheet-zu aria-label="Schließen" tabindex="-1"></button>
+  <div class="sheet-panel">
+    <div class="sheet-kopf">
+      <h2 id="ergebnisSheetTitel">Dein Ergebnis</h2>
+      <button type="button" class="sheet-zu" data-sheet-zu aria-label="Ergebnis schließen">✕</button>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi"><span class="k">Bruttorendite</span><span class="v num" data-out="bruttorendite">—</span></div>
+      <div class="kpi"><span class="k">Kaufpreis-Faktor</span><span class="v num" data-out="kaufpreisFaktor">—</span></div>
+      <div class="kpi"><span class="k">Kaufpreis pro m²</span><span class="v num" data-out="kaufpreisProQm">—</span></div>
+    </div>
+    <div class="cf-zeile">
+      <span class="k">Cashflow VOR Steuern / Monat:</span>
+      <span class="v num" data-out="cfVorMonat">—</span>
+    </div>
+    <div class="cf-zeile cf-haupt">
+      <span class="k" data-label="cfNachMonat">Cashflow NACH Steuern / Monat:</span>
+      <span class="badge plus" data-badge="cfNachMonat">
+        <span class="emoji" data-out="emoji" aria-hidden="true">🤑</span>
+        <span class="num" data-out="cfNachMonat">—</span>
+      </span>
+    </div>
+    <div class="cf-zeile">
+      <span class="k" data-label="cfNachJahr">Cashflow NACH Steuern / Jahr:</span>
+      <span class="v num" data-out="cfNachJahr">—</span>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ===== ENGINE START =====
+   Reine Rechen-, Parse- und Formatierlogik – kein DOM-Zugriff.
+   tests.html liest genau diesen Block aus index.html aus und testet ihn,
+   damit es keine zweite Kopie der Logik gibt, die auseinanderlaufen kann. */
+var IC = (function () {
+  'use strict';
+
+  var MAX_BETRAG = 1e9;
+
+  /* Feldliste: Art, Grenzen (interne Einheiten) und Anzeige-Nachkommastellen.
+     Prozentwerte werden intern als Bruch geführt (4,00 % -> 0,04). */
+  var FELDER = {
+    groesse:               {art:'num',   min:0, max:MAX_BETRAG, dezMin:0, dezMax:2},
+    kaufpreis:             {art:'euro',  min:0, max:MAX_BETRAG, dezMin:0, dezMax:2},
+    kaltmieteMonat:        {art:'euro',  min:0, max:MAX_BETRAG, dezMin:0, dezMax:2},
+    maklerSatz:            {art:'pct',   min:0, max:1,          dezMin:2, dezMax:2},
+    notarSatz:             {art:'pct',   min:0, max:1,          dezMin:2, dezMax:2},
+    grestSatz:             {art:'pct',   min:0, max:1,          dezMin:2, dezMax:2},
+    zusatzkosten:          {art:'euro',  min:0, max:MAX_BETRAG, dezMin:0, dezMax:2},
+    eigenkapital:          {art:'euro',  min:0, max:MAX_BETRAG, dezMin:0, dezMax:2},
+    hausgeldGesamt:        {art:'euro',  min:0, max:MAX_BETRAG, dezMin:0, dezMax:2},
+    hausgeldNichtUmlegbar: {art:'euro',  min:0, max:MAX_BETRAG, dezMin:0, dezMax:2},
+    zinsSatz:              {art:'pct',   min:0, max:1,          dezMin:2, dezMax:2},
+    tilgungSatz:           {art:'pct',   min:0, max:1,          dezMin:2, dezMax:2},
+    ihRuecklage:           {art:'eurqm', min:0, max:1e6,        dezMin:2, dezMax:2},
+    mietausfall:           {art:'pct',   min:0, max:1,          dezMin:2, dezMax:2},
+    gebaeudeanteil:        {art:'pct',   min:0, max:1,          dezMin:2, dezMax:2},
+    afaSatz:               {art:'pct',   min:0, max:1,          dezMin:2, dezMax:2},
+    grenzsteuersatz:       {art:'pct',   min:0, max:0.5,        dezMin:2, dezMax:2}
+  };
+
+  var DEFAULTS = {
+    objekt:'Musterstraße 12, 50667 Köln',
+    groesse:55,
+    kaufpreis:170000,
+    kaltmieteMonat:900,
+    maklerSatz:0.0357,
+    notarSatz:0.02,
+    grestSatz:0.065,
+    zusatzkosten:0,
+    eigenkapital:null,   /* null -> im Auto-Modus setzt die Formel den Wert */
+    ekAuto:true,
+    hausgeldGesamt:220,
+    hausgeldNichtUmlegbar:80,
+    zinsSatz:0.04,
+    tilgungSatz:0.015,
+    ihRuecklage:0,
+    mietausfall:0,
+    gebaeudeanteil:0.75,
+    afaSatz:0.03,
+    grenzsteuersatz:0.42
+  };
+
+  /* ---------- Eingabe-Parsing (deutsch und englisch) ---------- */
+  function parseZahl(eingabe){
+    if (eingabe === null || eingabe === undefined) return null;
+    var t = String(eingabe);
+    /* Leerzeichen jeder Art sowie Einheiten entfernen */
+    t = t.replace(/[\s    ]/g, '').replace(/[€%]/g, '').replace(/m²/g, '');
+    if (t === '') return null;
+    var negativ = t.charAt(0) === '-';
+    t = t.replace(/^[+-]/, '');
+    if (!/^[0-9]*[0-9.,][0-9.,]*$/.test(t)) return null;
+    if (!/[0-9]/.test(t)) return null;
+
+    var hatKomma = t.indexOf(',') >= 0;
+    var hatPunkt = t.indexOf('.') >= 0;
+
+    if (hatKomma && hatPunkt) {
+      /* Das weiter hinten stehende Zeichen ist der Dezimaltrenner */
+      if (t.lastIndexOf(',') > t.lastIndexOf('.')) t = t.replace(/\./g, '').replace(/,/g, '.');
+      else t = t.replace(/,/g, '');
+    } else if (hatKomma) {
+      var teile = t.split(',');
+      var dez = teile.pop();
+      t = teile.join('') + '.' + dez;
+    } else if (hatPunkt) {
+      var p = t.split('.');
+      if (p.length > 2) {
+        t = p.join('');                       /* 1.234.567 -> Tausendertrenner */
+      } else if (p[1].length === 3 && p[0].length >= 1 && p[0].length <= 3 && p[0].charAt(0) !== '0') {
+        t = p.join('');                       /* 170.000 -> Tausendertrenner */
+      }                                        /* sonst Dezimalpunkt: 1234.56 */
+    }
+    var n = parseFloat(t);
+    if (typeof n !== 'number' || !isFinite(n)) return null;
+    return negativ ? -n : n;
+  }
+
+  /* Wert aus einem Eingabefeld in die interne Einheit umrechnen */
+  function parseFeld(schluessel, eingabe){
+    var n = parseZahl(eingabe);
+    if (n === null) return null;
+    var f = FELDER[schluessel];
+    if (f && f.art === 'pct') n = n / 100;
+    return n;
+  }
+
+  /* ---------- Formatierung (zentral – hier wird NaN/Infinity/-0 abgefangen) ---------- */
+  var nfCache = {};
+  function nf(min, max){
+    var k = min + '_' + max;
+    if (!nfCache[k]) {
+      nfCache[k] = new Intl.NumberFormat('de-DE', {minimumFractionDigits:min, maximumFractionDigits:max});
+    }
+    return nfCache[k];
+  }
+  function endlich(v){
+    return (typeof v === 'number' && isFinite(v)) ? v : null;
+  }
+  function snap(v, dez){
+    /* verhindert "-0 €" und Vorzeichen-Artefakte durch Rundung */
+    var eps = 0.5 / Math.pow(10, dez);
+    if (Math.abs(v) < eps) return 0;
+    return v;
+  }
+  function fmtZahl(v, min, max){
+    v = endlich(v);
+    if (v === null) return '—';
+    v = snap(v, max);
+    if (Object.is(v, -0)) v = 0;
+    return nf(min, max).format(v);
+  }
+  function fmtEuro(v, dez){
+    dez = (dez === undefined) ? 0 : dez;
+    v = endlich(v);
+    if (v === null) return '—';
+    v = snap(v, dez);
+    if (Object.is(v, -0)) v = 0;
+    return nf(dez, dez).format(v) + ' €';
+  }
+  /* Große/absolute Beträge glatt, laufende Monats- und Jahreswerte mit Cent */
+  function fmtEuroGlatt(v){ return fmtEuro(v, 0); }
+  function fmtEuroCent(v){  return fmtEuro(v, 2); }
+  function fmtPct(v){
+    v = endlich(v);
+    if (v === null) return '—';
+    return fmtZahl(v * 100, 2, 2) + ' %';
+  }
+  function fmtFaktor(v){
+    v = endlich(v);
+    if (v === null) return '—';
+    return fmtZahl(v, 2, 2) + 'x';
+  }
+  function fmtEurQm(v){
+    v = endlich(v);
+    if (v === null) return '—';
+    return fmtZahl(v, 2, 2) + ' €/m²';
+  }
+
+  /* ---------- Normalisierung & Klemmung ---------- */
+  function norm(roh){
+    roh = roh || {};
+    var i = {};
+    for (var k in FELDER) {
+      if (!Object.prototype.hasOwnProperty.call(FELDER, k)) continue;
+      var f = FELDER[k];
+      var v = roh[k];
+      /* leeres Feld wird als 0 gerechnet */
+      if (v === null || v === undefined || typeof v !== 'number' || !isFinite(v)) v = 0;
+      if (v < f.min) v = f.min;
+      if (v > f.max) v = f.max;
+      i[k] = v;
+    }
+    i.ekAuto = roh.ekAuto !== false;
+    return i;
+  }
+
+  /* ---------- Kern: ein Durchlauf durch das Modell ---------- */
+  function kern(i){
+    var kaltmieteJahr = i.kaltmieteMonat * 12;
+
+    var nkSatz       = i.maklerSatz + i.notarSatz + i.grestSatz;
+    var maklerBetrag = i.maklerSatz * i.kaufpreis;
+    var notarBetrag  = i.notarSatz  * i.kaufpreis;
+    var grestBetrag  = i.grestSatz  * i.kaufpreis;
+    var nkBetrag     = maklerBetrag + notarBetrag + grestBetrag;
+    var kaufpreisInklNK = i.kaufpreis + maklerBetrag + notarBetrag + grestBetrag + i.zusatzkosten;
+
+    /* Eigenkapital deckt im Auto-Modus exakt die Anschaffungsnebenkosten – ohne Zusatzkosten */
+    var eigenkapitalDefault = i.kaufpreis * nkSatz;
+    var eigenkapital = i.ekAuto ? eigenkapitalDefault : i.eigenkapital;
+    var fremdkapital = kaufpreisInklNK - eigenkapital;
+
+    var zinsenMonat      = fremdkapital * i.zinsSatz    / 12;
+    var tilgungMonat     = fremdkapital * i.tilgungSatz / 12;
+    var ihRuecklageMonat = i.ihRuecklage * i.groesse;
+    var mietausfallMonat = i.kaltmieteMonat * i.mietausfall;
+
+    /* AfA-Bemessungsgrundlage ist der Kaufpreis inkl. Nebenkosten */
+    var gebaeudewert = i.gebaeudeanteil * kaufpreisInklNK;
+    var afaMonat     = gebaeudewert * i.afaSatz / 12;
+
+    var zuVersteuernMonat = i.kaltmieteMonat - i.hausgeldNichtUmlegbar - zinsenMonat - afaMonat;
+    /* + = Erstattung, − = Belastung. Tilgung ist bewusst kein steuerlicher Aufwand. */
+    var steuernMonat = -zuVersteuernMonat * i.grenzsteuersatz;
+
+    var cashflowVorSteuernMonat = i.kaltmieteMonat - i.hausgeldNichtUmlegbar - zinsenMonat
+                                  - tilgungMonat - ihRuecklageMonat - mietausfallMonat;
+    var cashflowNachSteuernMonat = cashflowVorSteuernMonat + steuernMonat;
+
+    /* Kennzahlen – Basis ist der Kaufpreis EXKL. Nebenkosten; null -> Anzeige "—" */
+    var bruttorendite   = (i.kaufpreis > 0 && kaltmieteJahr > 0) ? kaltmieteJahr / i.kaufpreis : null;
+    var kaufpreisFaktor = (kaltmieteJahr > 0) ? i.kaufpreis / kaltmieteJahr : null;
+    var kaufpreisProQm  = (i.groesse > 0) ? i.kaufpreis / i.groesse : null;
+
+    return {
+      kaltmieteJahr:kaltmieteJahr,
+      nkSatz:nkSatz, maklerBetrag:maklerBetrag, notarBetrag:notarBetrag,
+      grestBetrag:grestBetrag, nkBetrag:nkBetrag, kaufpreisInklNK:kaufpreisInklNK,
+      eigenkapitalDefault:eigenkapitalDefault, eigenkapital:eigenkapital, fremdkapital:fremdkapital,
+      zinsenMonat:zinsenMonat, tilgungMonat:tilgungMonat,
+      ihRuecklageMonat:ihRuecklageMonat, mietausfallMonat:mietausfallMonat,
+      gebaeudewert:gebaeudewert, afaMonat:afaMonat,
+      zuVersteuernMonat:zuVersteuernMonat, steuernMonat:steuernMonat,
+      cashflowVorSteuernMonat:cashflowVorSteuernMonat,
+      cashflowNachSteuernMonat:cashflowNachSteuernMonat,
+      cashflowNachSteuernJahr:cashflowNachSteuernMonat * 12,
+      bruttorendite:bruttorendite, kaufpreisFaktor:kaufpreisFaktor, kaufpreisProQm:kaufpreisProQm
+    };
+  }
+
+  /* ---------- Break-even: Sekante mit Schrittweite 1.000 ----------
+     Der Cashflow ist linear in Kaufpreis und Kaltmiete, das Ergebnis ist daher exakt. */
+  function loeseLinear(f, x0){
+    var f0 = f(x0);
+    var f1 = f(x0 + 1000);
+    if (!isFinite(f0) || !isFinite(f1)) return null;
+    var steigung = (f1 - f0) / 1000;
+    if (Math.abs(steigung) < 1e-12) return null;
+    return x0 - f0 / steigung;
+  }
+  function plausibel(x){
+    if (x === null || typeof x !== 'number' || !isFinite(x)) return null;
+    if (x <= 0) return null;
+    if (x > 1e12) return null;
+    return x;
+  }
+  function mitWert(i, schluessel, wert){
+    var j = {};
+    for (var k in i) if (Object.prototype.hasOwnProperty.call(i, k)) j[k] = i[k];
+    j[schluessel] = wert;
+    return j;
+  }
+
+  /* ---------- Öffentliche Berechnung ---------- */
+  function berechne(roh){
+    var i = norm(roh);
+    var r = kern(i);
+
+    var beKaufpreis = plausibel(loeseLinear(function (kp) {
+      return kern(mitWert(i, 'kaufpreis', kp)).cashflowNachSteuernMonat;
+    }, i.kaufpreis));
+
+    var beKaltmiete = plausibel(loeseLinear(function (m) {
+      return kern(mitWert(i, 'kaltmieteMonat', m)).cashflowNachSteuernMonat;
+    }, i.kaltmieteMonat));
+
+    r.breakEvenKaufpreis = beKaufpreis;
+    r.breakEvenKaltmiete = beKaltmiete;
+    /* Im Auto-Modus wandert das Eigenkapital beim Break-even-Kaufpreis mit */
+    r.breakEvenEigenkapital = (beKaufpreis !== null && i.ekAuto) ? beKaufpreis * r.nkSatz : null;
+
+    /* Schwelle deckungsgleich mit der Cent-Anzeige, damit "0,00 €" nie als negativ gilt */
+    r.negativ = r.cashflowNachSteuernMonat < -0.005;
+    r.emoji = (r.negativ && Math.abs(r.cashflowNachSteuernMonat) > 200) ? '🤔' : '🤑';
+    r.warnung15 = i.zusatzkosten > 0.15 * r.gebaeudewert;
+    r.inputs = i;
+    return r;
+  }
+
+  return {
+    FELDER:FELDER, DEFAULTS:DEFAULTS, MAX_BETRAG:MAX_BETRAG,
+    parseZahl:parseZahl, parseFeld:parseFeld,
+    fmtZahl:fmtZahl, fmtEuro:fmtEuro, fmtEuroGlatt:fmtEuroGlatt, fmtEuroCent:fmtEuroCent,
+    fmtPct:fmtPct, fmtFaktor:fmtFaktor, fmtEurQm:fmtEurQm,
+    norm:norm, kern:kern, loeseLinear:loeseLinear, berechne:berechne
+  };
+})();
+/* ===== ENGINE END ===== */
+</script>
+
+<script>
+/* ============================================================
+   UI – Verdrahtung von Eingaben, Ausgaben, Sheets und Speicherung.
+   Die Rechenlogik liegt vollständig in IC (Engine-Block oben).
+   ============================================================ */
+(function () {
+  'use strict';
+
+  var SPEICHER_KEY = 'ic-cashflow-v1';
+  var MERKEN_KEY   = 'ic-cashflow-merken';
+  var reduziert = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Reihenfolge für den Teilen-Link – nicht ändern, sonst brechen alte Links */
+  var SER = ['groesse','kaufpreis','kaltmieteMonat','maklerSatz','notarSatz','grestSatz',
+             'zusatzkosten','eigenkapital','hausgeldGesamt','hausgeldNichtUmlegbar',
+             'zinsSatz','tilgungSatz','ihRuecklage','mietausfall',
+             'gebaeudeanteil','afaSatz','grenzsteuersatz'];
+
+  var HILFE = {
+    eigenkapital: {
+      titel:'Eigenkapital',
+      text:'Default: deckt die Anschaffungsnebenkosten (Courtage, Notar, Grunderwerbsteuer) ab – Banken finanzieren diese meist nicht mit. Überschreib den Wert einfach mit deinem tatsächlichen Eigenkapital.'
+    },
+    hausgeldGesamt: {
+      titel:'Hausgeld gesamt (WEG)',
+      text:'Monatliches Hausgeld laut letzter Nebenkostenabrechnung, Verwalterabrechnung, Wirtschaftsplan oder Angaben im Exposé.'
+    },
+    hausgeldNichtUmlegbar: {
+      titel:'Nicht umlegbarer Anteil',
+      text:'Nicht im Kaufvertrag nachsehen – da steht das nicht mehr aktuell drin! Im Wirtschaftsplan oder der letzten Abrechnung nachschauen. Faustregel ohne Unterlagen: ca. 30 € Verwaltung + 50 € Instandhaltungsrücklage = 80 €.'
+    },
+    zinsSatz: {
+      titel:'Zinsen',
+      text:'Aktuellen Sollzinssatz bei deiner Bank/deinem Finanzierungsvermittler erfragen. 4,0 % ist ein grober Orientierungswert. Willst du ein alternatives Angebot? Meld dich gerne bei uns per DM – wir haben gute Finanzierer an der Hand!'
+    },
+    tilgungSatz: {
+      titel:'Tilgung',
+      text:'Anfänglicher Tilgungssatz p. a., mit der Bank verhandelbar – üblich ca. 1–2 %.'
+    },
+    ihRuecklage: {
+      titel:'Instandhaltungsrücklage',
+      text:'Standardmäßig 0, da die Instandhaltungsrücklage meist schon im nicht umlegbaren Anteil des Hausgeldes enthalten ist. Nur befüllen, wenn du zusätzlich zur WEG-Rücklage selbst etwas zurücklegen willst.'
+    },
+    mietausfall: {
+      titel:'Mietausfallwagnis',
+      text:'Standardmäßig 0. Puffer für Mietausfall/Leerstand – in gefragten A-Lagen mit stabiler Vermietung meist nicht nötig, in schwächeren Lagen ca. 2 % der Kaltmiete ansetzen.'
+    },
+    gebaeudeanteil: {
+      titel:'Gebäudeanteil am Kaufpreis',
+      text:'Der Gebäudeanteil (steuerlich abschreibbar) variiert je Objekt stark (Baujahr, Lage, Grundstücksgröße) – hier beispielhaft mit 75 % gerechnet. Für eine genaue Berechnung: BMF-Arbeitshilfe vom Finanzamt (das Ergebnis ist der Worst Case, den das Finanzamt ansetzen würde).'
+    },
+    afaSatz: {
+      titel:'AfA-Satz p. a.',
+      text:'2,0 % p. a. bei Gebäuden ab Baujahr 1925, 2,5 % p. a. bei Baujahr vor 1925 (§ 7 Abs. 4 EStG) – das ist aber nur der gesetzliche Mindestsatz. Unbedingt ein Restnutzungsdauergutachten erstellen lassen, wenn die Vermutung besteht, dass sich das lohnt – die AfA kann dadurch deutlich höher ausfallen. Da wir überwiegend Bestandsimmobilien älteren Jahrgangs kaufen, landen wir i. d. R. bei mind. 3 % – daher als Default hinterlegt. Erste Einschätzung bei verschiedenen Gutachter-Anbietern einholen; bei Rückfragen gerne eine DM an uns – wir haben ein großes Netzwerk hierzu.'
+    },
+    grenzsteuersatz: {
+      titel:'Persönlicher Grenzsteuersatz',
+      text:'Dein individueller Grenzsteuersatz – am besten beim Steuerberater erfragen.'
+    },
+    steuern: {
+      titel:'Steuern',
+      text:'Ist das zu versteuernde Ergebnis oben negativ (z. B. durch AfA und Zinsen), bekommst du vom Finanzamt Geld zurück (+ Erstattung). Ist es positiv, zahlst du zusätzlich Steuern auf deine Mieteinnahmen (– Belastung).'
+    }
+  };
+
+  var LABELS = {
+    cfNachMonat:      ['Cashflow NACH Steuern / Monat:', 'Sparbeitrag / Monat:'],
+    cfNachMonatPlain: ['Cashflow NACH Steuern / Monat',  'Sparbeitrag / Monat'],
+    cfNachJahr:       ['Cashflow NACH Steuern / Jahr:',  'Sparbeitrag / Jahr:'],
+    cfNachJahrKurz:   ['Cashflow NACH Steuern / Jahr',   'Sparbeitrag / Jahr'],
+    stickyKurz:       ['Cashflow nach Steuern',          'Sparbeitrag'],
+    stickyMonat:      ['/ Monat',                        '/ Monat']
+  };
+
+  var NICHT_ERREICHBAR = 'in diesem Szenario nicht erreichbar';
+
+  /* ---------- Zustand ---------- */
+  var zustand = kopie(IC.DEFAULTS);
+  var eingaben = {};   /* schluessel -> input-Element */
+
+  function kopie(o){
+    var n = {};
+    for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) n[k] = o[k];
+    return n;
+  }
+
+  /* ---------- Anzeige-Text für ein Eingabefeld ---------- */
+  function feldText(schluessel, wert){
+    if (wert === null || wert === undefined) return '';
+    var f = IC.FELDER[schluessel];
+    if (!f) return String(wert);
+    if (f.art === 'pct') return IC.fmtZahl(wert * 100, f.dezMin, f.dezMax);
+    return IC.fmtZahl(wert, f.dezMin, f.dezMax);
+  }
+
+  /* ---------- Ausgaben ---------- */
+  function setzeText(name, text){
+    var els = document.querySelectorAll('[data-out="' + name + '"]');
+    for (var i = 0; i < els.length; i++) {
+      if (els[i].textContent !== text) els[i].textContent = text;
+    }
+  }
+  /* Setzt das Element hart auf den exakten Zielwert und räumt Timer/Frames auf. */
+  function endwert(el, fmt){
+    if (el.__raf) { cancelAnimationFrame(el.__raf); el.__raf = 0; }
+    if (el.__timer) { clearTimeout(el.__timer); el.__timer = 0; }
+    var t = fmt(el.__wert);
+    if (el.textContent !== t) el.textContent = t;
+  }
+  /* Zähl-Animation mit Sicherheitsnetz: requestAnimationFrame pausiert in
+     Hintergrund-Tabs. Ohne den Timer bliebe dann ein Zwischenwert stehen –
+     der Timer schreibt am Ende immer den exakten Wert. */
+  function zahlIn(el, ziel, fmt, animieren){
+    var vorher = el.__wert;
+    var kannAnimieren = animieren && !reduziert &&
+      document.visibilityState === 'visible' &&
+      typeof vorher === 'number' && isFinite(vorher) &&
+      typeof ziel === 'number' && isFinite(ziel) && vorher !== ziel;
+
+    el.__wert = ziel;
+    if (!kannAnimieren) { endwert(el, fmt); return; }
+
+    if (el.__raf) cancelAnimationFrame(el.__raf);
+    if (el.__timer) clearTimeout(el.__timer);
+    var von = vorher, start = 0, dauer = 200;
+    var schritt = function (jetzt) {
+      if (!start) start = jetzt;
+      var p = Math.min(1, (jetzt - start) / dauer);
+      if (p >= 1) { endwert(el, fmt); return; }
+      var e = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(von + (ziel - von) * e);
+      el.__raf = requestAnimationFrame(schritt);
+    };
+    el.__raf = requestAnimationFrame(schritt);
+    el.__timer = setTimeout(function () { endwert(el, fmt); }, dauer + 80);
+  }
+  function setzeZahl(name, wert, fmt, animieren){
+    var els = document.querySelectorAll('[data-out="' + name + '"]');
+    for (var i = 0; i < els.length; i++) zahlIn(els[i], wert, fmt, animieren);
+  }
+  function setzeLabel(name, negativ){
+    var paare = LABELS[name];
+    if (!paare) return;
+    var text = negativ ? paare[1] : paare[0];
+    var els = document.querySelectorAll('[data-label="' + name + '"]');
+    for (var i = 0; i < els.length; i++) {
+      if (els[i].textContent !== text) els[i].textContent = text;
+    }
+  }
+  function setzeFehler(schluessel, text){
+    var el = document.querySelector('[data-fehler="' + schluessel + '"]');
+    if (el && el.textContent !== text) el.textContent = text;
+  }
+
+  /* ---------- Klemm-Meldungen ---------- */
+  function fehlerText(schluessel, roh){
+    if (roh === null || roh === undefined) return '';
+    var f = IC.FELDER[schluessel];
+    if (!f) return '';
+    if (roh < f.min) return 'Negative Werte sind hier nicht möglich – gerechnet wird mit 0.';
+    if (roh > f.max) {
+      if (f.art === 'pct') return 'Maximal ' + IC.fmtZahl(f.max * 100, 0, 2) + ' % – gerechnet wird mit diesem Wert.';
+      return 'Maximal ' + IC.fmtEuroGlatt(f.max) + ' – gerechnet wird mit diesem Wert.';
+    }
+    return '';
+  }
+
+  /* ---------- Haupt-Render ---------- */
+  var ekFeld, ekAutoLink, stickyBar;
+
+  function render(animieren){
+    var r = IC.berechne(zustand);
+    var neg = r.negativ;
+
+    /* Eigenkapital im Auto-Modus nachführen (nicht, während der Nutzer tippt) */
+    if (zustand.ekAuto) {
+      var autoText = feldText('eigenkapital', r.eigenkapitalDefault);
+      if (document.activeElement !== ekFeld && ekFeld.value !== autoText) ekFeld.value = autoText;
+      ekFeld.classList.add('ist-auto');
+      ekAutoLink.hidden = true;
+      setzeText('ekModus', 'Automatisch: deckt die Anschaffungsnebenkosten ab.');
+    } else {
+      ekFeld.classList.remove('ist-auto');
+      ekAutoLink.hidden = false;
+      setzeText('ekModus', 'Manuell überschrieben.');
+    }
+
+    /* 01 */
+    setzeZahl('kaltmieteJahr', r.kaltmieteJahr, IC.fmtEuroCent, false);
+
+    /* 02 */
+    setzeText('nkSatz', IC.fmtPct(r.nkSatz));
+    setzeZahl('maklerBetrag', r.maklerBetrag, IC.fmtEuroGlatt, false);
+    setzeZahl('notarBetrag',  r.notarBetrag,  IC.fmtEuroGlatt, false);
+    setzeZahl('grestBetrag',  r.grestBetrag,  IC.fmtEuroGlatt, false);
+    setzeZahl('nkBetrag',     r.nkBetrag,     IC.fmtEuroGlatt, false);
+    setzeZahl('kaufpreisInklNK', r.kaufpreisInklNK, IC.fmtEuroGlatt, false);
+
+    /* 15-%-Regel */
+    var zusatzEl = document.querySelector('[data-out="zusatzHinweis"]');
+    if (zusatzEl) {
+      if (r.warnung15) {
+        zusatzEl.textContent = '⚠️ Über 15 % des Gebäudeanteils – evtl. nicht sofort absetzbar (Erhaltungsaufwendungen). Schreib uns gerne eine DM, wir schauen drauf.';
+        zusatzEl.classList.add('warn');
+      } else {
+        zusatzEl.textContent = 'Optional: z. B. Küche, Elektrik, Renovierung direkt nach Kauf.';
+        zusatzEl.classList.remove('warn');
+      }
+    }
+
+    /* 03 */
+    setzeZahl('fremdkapital', r.fremdkapital, IC.fmtEuroGlatt, false);
+
+    /* 04 – Positionen (Kosten mit negativem Vorzeichen, damit die Summe aufgeht) */
+    setzeZahl('posMieteM', r.inputs.kaltmieteMonat, IC.fmtEuroCent, false);
+    setzeZahl('posMieteJ', r.kaltmieteJahr, IC.fmtEuroCent, false);
+    setzeZahl('posHgM', r.inputs.hausgeldGesamt, IC.fmtEuroCent, false);
+    setzeZahl('posHgJ', r.inputs.hausgeldGesamt * 12, IC.fmtEuroCent, false);
+    setzeZahl('posNuM', -r.inputs.hausgeldNichtUmlegbar, IC.fmtEuroCent, false);
+    setzeZahl('posNuJ', -r.inputs.hausgeldNichtUmlegbar * 12, IC.fmtEuroCent, false);
+    setzeText('posZinsSatz', IC.fmtPct(r.inputs.zinsSatz));
+    setzeZahl('posZinsM', -r.zinsenMonat, IC.fmtEuroCent, false);
+    setzeZahl('posZinsJ', -r.zinsenMonat * 12, IC.fmtEuroCent, false);
+    setzeText('posTilgSatz', IC.fmtPct(r.inputs.tilgungSatz));
+    setzeZahl('posTilgM', -r.tilgungMonat, IC.fmtEuroCent, false);
+    setzeZahl('posTilgJ', -r.tilgungMonat * 12, IC.fmtEuroCent, false);
+    setzeText('posIhSatz', IC.fmtEurQm(r.inputs.ihRuecklage));
+    setzeZahl('posIhM', -r.ihRuecklageMonat, IC.fmtEuroCent, false);
+    setzeZahl('posIhJ', -r.ihRuecklageMonat * 12, IC.fmtEuroCent, false);
+    setzeText('posMaSatz', IC.fmtPct(r.inputs.mietausfall));
+    setzeZahl('posMaM', -r.mietausfallMonat, IC.fmtEuroCent, false);
+    setzeZahl('posMaJ', -r.mietausfallMonat * 12, IC.fmtEuroCent, false);
+    setzeZahl('posCfVorM', r.cashflowVorSteuernMonat, IC.fmtEuroCent, false);
+    setzeZahl('posCfVorJ', r.cashflowVorSteuernMonat * 12, IC.fmtEuroCent, false);
+
+    /* 05 */
+    setzeZahl('gebaeudewert', r.gebaeudewert, IC.fmtEuroGlatt, false);
+    setzeZahl('afaMonat', r.afaMonat, IC.fmtEuroCent, false);
+    setzeZahl('afaJahr', r.afaMonat * 12, IC.fmtEuroCent, false);
+    setzeZahl('zuVersteuernMonat', r.zuVersteuernMonat, IC.fmtEuroCent, false);
+    setzeZahl('steuernMonat', r.steuernMonat, IC.fmtEuroCent, false);
+
+    /* Ergebnis / 06 */
+    setzeText('bruttorendite', IC.fmtPct(r.bruttorendite));
+    setzeText('kaufpreisFaktor', IC.fmtFaktor(r.kaufpreisFaktor));
+    setzeText('kaufpreisProQm', IC.fmtEuroGlatt(r.kaufpreisProQm));
+    setzeZahl('cfVorMonat',  r.cashflowVorSteuernMonat,  IC.fmtEuroCent, animieren);
+    setzeZahl('cfNachMonat', r.cashflowNachSteuernMonat, IC.fmtEuroCent, animieren);
+    setzeZahl('cfNachJahr',  r.cashflowNachSteuernJahr,  IC.fmtEuroCent, animieren);
+    setzeText('emoji', r.emoji);
+
+    setzeLabel('cfNachMonat', neg);
+    setzeLabel('cfNachMonatPlain', neg);
+    setzeLabel('cfNachJahr', neg);
+    setzeLabel('cfNachJahrKurz', neg);
+    setzeLabel('stickyKurz', neg);
+    setzeLabel('stickyMonat', neg);
+
+    var badges = document.querySelectorAll('[data-badge="cfNachMonat"]');
+    for (var b = 0; b < badges.length; b++) {
+      badges[b].classList.toggle('minus', neg);
+      badges[b].classList.toggle('plus', !neg);
+    }
+
+    /* 07 – Break-even */
+    var beKpEl = document.querySelector('[data-out="beKaufpreis"]');
+    if (r.breakEvenKaufpreis === null) {
+      beKpEl.textContent = NICHT_ERREICHBAR;
+      beKpEl.classList.add('leer');
+      beKpEl.__wert = null;
+    } else {
+      beKpEl.classList.remove('leer');
+      zahlIn(beKpEl, r.breakEvenKaufpreis, IC.fmtEuroGlatt, false);
+    }
+    var beMEl = document.querySelector('[data-out="beKaltmiete"]');
+    if (r.breakEvenKaltmiete === null) {
+      beMEl.textContent = NICHT_ERREICHBAR;
+      beMEl.classList.add('leer');
+      beMEl.__wert = null;
+    } else {
+      beMEl.classList.remove('leer');
+      zahlIn(beMEl, r.breakEvenKaltmiete, IC.fmtEuroCent, false);
+    }
+    var fussEl = document.querySelector('[data-out="beKaufpreisFuss"]');
+    if (r.breakEvenEigenkapital !== null) {
+      fussEl.textContent = 'Bei diesem Kaufpreis steigt auch das benötigte Eigenkapital auf '
+        + IC.fmtEuroGlatt(r.breakEvenEigenkapital) + '.';
+      fussEl.hidden = false;
+    } else {
+      fussEl.hidden = true;
+      fussEl.textContent = '';
+    }
+
+    /* Feldmeldungen */
+    for (var s in IC.FELDER) {
+      if (Object.prototype.hasOwnProperty.call(IC.FELDER, s)) setzeFehler(s, fehlerText(s, zustand[s]));
+    }
+    if (!zustand.ekAuto && r.fremdkapital < 0) {
+      setzeFehler('eigenkapital', 'Dein Eigenkapital übersteigt den Kaufpreis inkl. Nebenkosten – das Fremdkapital wird rechnerisch negativ.');
+    }
+
+    meldeLive(r);
+    speichereSpaeter();
+  }
+
+  /* ---------- Live-Region (gedrosselt, damit Screenreader nicht überrollt werden) ---------- */
+  var liveTimer = 0;
+  function meldeLive(r){
+    if (liveTimer) clearTimeout(liveTimer);
+    liveTimer = setTimeout(function () {
+      var el = document.getElementById('liveRegion');
+      if (!el) return;
+      el.textContent = (r.negativ ? 'Sparbeitrag' : 'Cashflow nach Steuern')
+        + ' pro Monat: ' + IC.fmtEuroCent(r.cashflowNachSteuernMonat)
+        + '. Pro Jahr: ' + IC.fmtEuroCent(r.cashflowNachSteuernJahr) + '.';
+    }, 700);
+  }
+
+  /* ---------- Speicherung (Opt-in) ----------
+     Ohne ausdrückliche Einwilligung wird nichts abgelegt – auch kein
+     Einwilligungs-Flag. Erst das Häkchen schreibt überhaupt in den Speicher. */
+  var merkenAn = false;
+  var speicherTimer = 0;
+
+  function speichereSpaeter(){
+    if (!merkenAn) return;
+    if (speicherTimer) clearTimeout(speicherTimer);
+    speicherTimer = setTimeout(speichere, 400);
+  }
+  function speichere(){
+    if (!merkenAn) return;
+    try {
+      localStorage.setItem(MERKEN_KEY, '1');
+      localStorage.setItem(SPEICHER_KEY, JSON.stringify(zustand));
+    } catch (e) { /* Privater Modus o. Ä. – Speichern ist optional */ }
+  }
+  function vergiss(){
+    if (speicherTimer) { clearTimeout(speicherTimer); speicherTimer = 0; }
+    try {
+      localStorage.removeItem(SPEICHER_KEY);
+      localStorage.removeItem(MERKEN_KEY);
+    } catch (e) { /* nichts zu tun */ }
+  }
+  function merkenAktiv(){
+    try { return localStorage.getItem(MERKEN_KEY) === '1'; }
+    catch (e) { return false; }
+  }
+  function ladeGespeichert(){
+    if (!merkenAn) return null;
+    try {
+      var roh = localStorage.getItem(SPEICHER_KEY);
+      if (!roh) return null;
+      var o = JSON.parse(roh);
+      return (o && typeof o === 'object') ? o : null;
+    } catch (e) { return null; }
+  }
+
+  /* ---------- Permalink ---------- */
+  function b64u(s){
+    var bytes = new TextEncoder().encode(s), bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function unb64u(s){
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+  function kodiere(z){
+    var teile = [z.ekAuto ? '1' : '0'];
+    for (var i = 0; i < SER.length; i++) {
+      var v = z[SER[i]];
+      teile.push((v === null || v === undefined) ? '' : String(Math.round(v * 1e6) / 1e6));
+    }
+    teile.push(encodeURIComponent(z.objekt || '').replace(/~/g, '%7E'));
+    return b64u(teile.join('~'));
+  }
+  function dekodiere(code){
+    try {
+      var teile = unb64u(code).split('~');
+      if (teile.length < SER.length + 1) return null;
+      var z = kopie(IC.DEFAULTS);
+      z.ekAuto = teile[0] === '1';
+      for (var i = 0; i < SER.length; i++) {
+        var s = teile[i + 1];
+        z[SER[i]] = (s === '') ? null : IC.parseZahl(s.replace(',', '.'));
+      }
+      z.objekt = decodeURIComponent(teile[SER.length + 1] || '');
+      return z;
+    } catch (e) { return null; }
+  }
+  function basisUrl(){
+    return location.href.split('#')[0].split('?')[0];
+  }
+
+  /* ---------- Toast ---------- */
+  var toastTimer = 0;
+  function toast(text){
+    var el = document.getElementById('toast');
+    el.textContent = text;
+    el.classList.add('an');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('an'); }, 2200);
+  }
+
+  /* ---------- Bottom-Sheets ---------- */
+  var offenesSheet = null, letzterFokus = null;
+  function fokussierbare(el){
+    return el.querySelectorAll('button:not([tabindex="-1"]), a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  }
+  function sheetAuf(el, ausloeser){
+    letzterFokus = ausloeser || document.activeElement;
+    el.hidden = false;
+    offenesSheet = el;
+    document.body.style.overflow = 'hidden';
+    var f = fokussierbare(el);
+    if (f.length) f[0].focus();
+  }
+  function sheetZu(){
+    if (!offenesSheet) return;
+    offenesSheet.hidden = true;
+    offenesSheet = null;
+    document.body.style.overflow = '';
+    if (letzterFokus && letzterFokus.focus) letzterFokus.focus();
+    letzterFokus = null;
+  }
+  document.addEventListener('keydown', function (e) {
+    if (!offenesSheet) return;
+    if (e.key === 'Escape') { e.preventDefault(); sheetZu(); return; }
+    if (e.key === 'Tab') {
+      var f = fokussierbare(offenesSheet);
+      if (!f.length) return;
+      var erst = f[0], letzt = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === erst) { e.preventDefault(); letzt.focus(); }
+      else if (!e.shiftKey && document.activeElement === letzt) { e.preventDefault(); erst.focus(); }
+    }
+  });
+  document.addEventListener('click', function (e) {
+    var zu = e.target.closest && e.target.closest('[data-sheet-zu]');
+    if (zu) { e.preventDefault(); sheetZu(); }
+  });
+
+  /* ---------- Initialisierung ---------- */
+  function init(){
+    ekFeld = document.getElementById('eigenkapital');
+    ekAutoLink = document.getElementById('ekAutoLink');
+    stickyBar = document.getElementById('stickyBar');
+
+    /* Einwilligung zuerst lesen – ohne sie wird gar nicht erst gespeichert gelesen */
+    merkenAn = merkenAktiv();
+    var merkenSchalter = document.getElementById('merkenSchalter');
+    merkenSchalter.checked = merkenAn;
+    merkenSchalter.addEventListener('change', function () {
+      merkenAn = merkenSchalter.checked;
+      if (merkenAn) { speichere(); toast('Eingaben werden auf diesem Gerät gemerkt'); }
+      else { vergiss(); toast('Gespeicherte Eingaben gelöscht'); }
+    });
+
+    /* Zustand bestimmen: URL hat Vorrang vor localStorage */
+    var ausUrl = null;
+    var q = new URLSearchParams(location.search).get('d');
+    if (q) ausUrl = dekodiere(q);
+    var quelle = ausUrl || ladeGespeichert();
+    if (quelle) {
+      for (var k in zustand) {
+        if (!Object.prototype.hasOwnProperty.call(zustand, k)) continue;
+        if (Object.prototype.hasOwnProperty.call(quelle, k)) {
+          var w = quelle[k];
+          if (k === 'objekt') zustand[k] = (typeof w === 'string') ? w : '';
+          else if (k === 'ekAuto') zustand[k] = w !== false;
+          else zustand[k] = (typeof w === 'number' && isFinite(w)) ? w : null;
+        }
+      }
+    }
+
+    /* Felder verdrahten */
+    var felder = document.querySelectorAll('[data-feld]');
+    for (var i = 0; i < felder.length; i++) {
+      (function (el) {
+        var s = el.getAttribute('data-feld');
+        eingaben[s] = el;
+
+        if (s === 'objekt') {
+          el.value = zustand.objekt || '';
+          el.addEventListener('input', function () {
+            zustand.objekt = el.value;
+            speichereSpaeter();
+          });
+          return;
+        }
+
+        el.value = feldText(s, zustand[s]);
+
+        el.addEventListener('input', function () {
+          zustand[s] = IC.parseFeld(s, el.value);
+          if (s === 'eigenkapital') zustand.ekAuto = false;
+          render(true);
+        });
+        el.addEventListener('blur', function () {
+          /* beim Verlassen auf die kanonische Schreibweise normalisieren */
+          if (s === 'eigenkapital' && zustand.ekAuto) return;
+          var f = IC.FELDER[s], v = zustand[s];
+          if (v !== null && v !== undefined) {
+            if (v < f.min) v = f.min;
+            if (v > f.max) v = f.max;
+            zustand[s] = v;
+          }
+          el.value = feldText(s, zustand[s]);
+          render(false);
+        });
+      })(felder[i]);
+    }
+
+    /* Eigenkapital zurück in den Auto-Modus */
+    ekAutoLink.addEventListener('click', function () {
+      zustand.ekAuto = true;
+      render(true);
+      ekFeld.focus();
+    });
+
+    /* Intro ein-/ausklappen */
+    var introText = document.getElementById('introText');
+    var introToggle = document.getElementById('introToggle');
+    introToggle.addEventListener('click', function () {
+      var offen = !introText.classList.contains('gekuerzt');
+      introText.classList.toggle('gekuerzt', offen);
+      introToggle.textContent = offen ? 'Mehr lesen' : 'Weniger anzeigen';
+      introToggle.setAttribute('aria-expanded', offen ? 'false' : 'true');
+    });
+
+    /* Hilfe-Sheets */
+    var infos = document.querySelectorAll('.info[data-hilfe]');
+    for (var j = 0; j < infos.length; j++) {
+      infos[j].addEventListener('click', function () {
+        var h = HILFE[this.getAttribute('data-hilfe')];
+        if (!h) return;
+        document.getElementById('hilfeTitel').textContent = h.titel;
+        document.getElementById('hilfeText').textContent = h.text;
+        sheetAuf(document.getElementById('hilfeSheet'), this);
+      });
+    }
+
+    /* Ergebnis-Sheet über die Sticky-Bar */
+    stickyBar.addEventListener('click', function () {
+      sheetAuf(document.getElementById('ergebnisSheet'), stickyBar);
+    });
+
+    /* Aktionen */
+    document.getElementById('btnDrucken').addEventListener('click', function () {
+      window.print();
+    });
+
+    document.getElementById('btnReset').addEventListener('click', function () {
+      if (!window.confirm('Alle Eingaben mit den Beispielwerten überschreiben?')) return;
+      zustand = kopie(IC.DEFAULTS);
+      for (var s in eingaben) {
+        if (!Object.prototype.hasOwnProperty.call(eingaben, s)) continue;
+        eingaben[s].value = (s === 'objekt') ? (zustand.objekt || '') : feldText(s, zustand[s]);
+      }
+      try { history.replaceState(null, '', basisUrl()); } catch (e) { /* file:// */ }
+      if (merkenAn) speichere(); else vergiss();
+      render(true);
+      toast('Beispielwerte wiederhergestellt');
+    });
+
+    document.getElementById('btnTeilen').addEventListener('click', function () {
+      var url = basisUrl() + '?d=' + kodiere(zustand);
+      try { history.replaceState(null, '', url); } catch (e) { /* file:// */ }
+      kopiereText(url).then(function (ok) {
+        toast(ok ? 'Link kopiert' : 'Link steht in der Adresszeile');
+      });
+    });
+
+    /* Sticky-Bar ausblenden, solange die virtuelle Tastatur offen ist */
+    if (window.visualViewport) {
+      var vv = window.visualViewport;
+      var pruefeTastatur = function () {
+        var tastaturOffen = (window.innerHeight - vv.height) > 140;
+        stickyBar.classList.toggle('weg', tastaturOffen);
+        document.body.classList.toggle('bar-aus', tastaturOffen);
+      };
+      vv.addEventListener('resize', pruefeTastatur);
+      vv.addEventListener('scroll', pruefeTastatur);
+    }
+
+    render(false);
+  }
+
+  function kopiereText(text){
+    if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () { return true; },
+                                                      function () { return fallbackKopie(text); });
+    }
+    return Promise.resolve(fallbackKopie(text));
+  }
+  function fallbackKopie(text){
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) { return false; }
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+
+</body>
+</html>

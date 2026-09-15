@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Akzeptanztests – Cashflow-Rechner</title>
+<style>
+:root{
+  --petrol-900:#0F5C55;--mint-300:#8FDCD2;--mint-050:#EDFAF8;
+  --gruen:#0F7B3A;--rot:#B00020;--grau-600:#7A7A7A;--flaeche:#F2F2F2;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;padding:24px 16px 64px;
+  font:16px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  color:#3A3A3A;background:#fff;
+}
+.wrap{max-width:860px;margin:0 auto}
+h1{color:var(--petrol-900);font-size:1.5rem;margin:0 0 4px}
+.unter{color:var(--grau-600);font-size:.875rem;margin:0 0 20px}
+.summe{
+  border-radius:14px;padding:16px;margin:0 0 24px;
+  font-weight:700;font-size:1.125rem;color:#fff;
+}
+.summe.ok{background:var(--gruen)}
+.summe.fail{background:var(--rot)}
+.summe.warte{background:var(--grau-600)}
+.hinweis{
+  background:#FFF4D6;border:1px solid #E8B84B;border-radius:12px;
+  padding:14px 16px;margin:0 0 24px;font-size:.9375rem;
+}
+.hinweis code{
+  display:block;background:#fff;border-radius:8px;padding:8px 10px;margin-top:8px;
+  font-size:.8125rem;overflow-x:auto;
+}
+h2{
+  color:var(--petrol-900);font-size:1rem;margin:24px 0 8px;
+  padding-bottom:6px;border-bottom:2px solid var(--mint-300);
+}
+table{width:100%;border-collapse:collapse;font-size:.875rem}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid #EEE;vertical-align:top}
+th{color:var(--grau-600);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
+td.z{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.ok td.st{color:var(--gruen);font-weight:700}
+tr.fail{background:#FDECEF}
+tr.fail td.st{color:var(--rot);font-weight:700}
+td.st{width:1%;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Akzeptanztests – Cashflow-Rechner</h1>
+  <p class="unter">Die Engine wird zur Laufzeit aus <code>index.html</code> gelesen (Block zwischen <code>ENGINE START</code> und <code>ENGINE END</code>) – es gibt also keine zweite Kopie der Rechenlogik, die auseinanderlaufen könnte. Toleranz: ±0,01.</p>
+  <div class="summe warte" id="summe">Lade Engine aus index.html …</div>
+  <div id="ausgabe"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var TOL = 0.01;
+  var gruppen = [], aktuelle = null, anzahlOk = 0, anzahlFail = 0;
+
+  function gruppe(name){
+    aktuelle = {name:name, zeilen:[]};
+    gruppen.push(aktuelle);
+  }
+  function pruefe(name, ist, soll, tol){
+    tol = (tol === undefined) ? TOL : tol;
+    var ok, istText, sollText;
+    if (typeof soll === 'number') {
+      ok = (typeof ist === 'number') && isFinite(ist) && Math.abs(ist - soll) <= tol;
+      istText  = (typeof ist === 'number') ? ist.toFixed(4) : String(ist);
+      sollText = soll.toFixed(4);
+    } else {
+      ok = (ist === soll);
+      istText = String(ist);
+      sollText = String(soll);
+    }
+    if (ok) anzahlOk++; else anzahlFail++;
+    aktuelle.zeilen.push({name:name, ist:istText, soll:sollText, ok:ok});
+  }
+  function pruefeWahr(name, bedingung, beschreibung){
+    if (bedingung) anzahlOk++; else anzahlFail++;
+    aktuelle.zeilen.push({name:name, ist:(bedingung ? 'erfüllt' : 'NICHT erfüllt'),
+                          soll:(beschreibung || 'erfüllt'), ok:!!bedingung});
+  }
+
+  function zeichne(){
+    var html = '';
+    for (var g = 0; g < gruppen.length; g++) {
+      html += '<h2>' + esc(gruppen[g].name) + '</h2>';
+      html += '<table><thead><tr><th>Prüfung</th><th style="text-align:right">Ist</th><th style="text-align:right">Soll</th><th></th></tr></thead><tbody>';
+      for (var z = 0; z < gruppen[g].zeilen.length; z++) {
+        var r = gruppen[g].zeilen[z];
+        html += '<tr class="' + (r.ok ? 'ok' : 'fail') + '">'
+              + '<td>' + esc(r.name) + '</td>'
+              + '<td class="z">' + esc(r.ist) + '</td>'
+              + '<td class="z">' + esc(r.soll) + '</td>'
+              + '<td class="st">' + (r.ok ? '✓' : '✕') + '</td></tr>';
+      }
+      html += '</tbody></table>';
+    }
+    document.getElementById('ausgabe').innerHTML = html;
+    var s = document.getElementById('summe');
+    s.className = 'summe ' + (anzahlFail === 0 ? 'ok' : 'fail');
+    s.textContent = anzahlFail === 0
+      ? '✓ Alle ' + anzahlOk + ' Prüfungen grün'
+      : '✕ ' + anzahlFail + ' von ' + (anzahlOk + anzahlFail) + ' Prüfungen rot';
+  }
+  function esc(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ---------- Engine aus index.html holen ---------- */
+  function ladeEngine(){
+    return fetch('index.html', {cache:'no-store'}).then(function (a) {
+      if (!a.ok) throw new Error('HTTP ' + a.status);
+      return a.text();
+    }).then(function (html) {
+      var start = html.indexOf('/* ===== ENGINE START =====');
+      var ende  = html.indexOf('/* ===== ENGINE END ===== */');
+      if (start < 0 || ende < 0) throw new Error('Engine-Block in index.html nicht gefunden');
+      var quelle = html.slice(start, ende);
+      return new Function(quelle + '\n;return IC;')();
+    });
+  }
+
+  function fehlerAnzeigen(e){
+    var s = document.getElementById('summe');
+    s.className = 'summe fail';
+    s.textContent = '✕ Engine konnte nicht geladen werden: ' + e.message;
+    document.getElementById('ausgabe').innerHTML =
+      '<div class="hinweis"><b>So startest du die Tests:</b><br>' +
+      'Beim Öffnen per Doppelklick (<code style="display:inline;padding:0;background:none">file://</code>) blockieren Browser das Nachladen von index.html. ' +
+      'Starte deshalb im Projektordner einen lokalen Server und öffne die Seite darüber – index.html selbst funktioniert weiterhin offline per Doppelklick.' +
+      '<code>python3 -m http.server 8000</code>' +
+      '<code>open http://localhost:8000/tests.html</code></div>';
+  }
+
+  /* ---------- Testfälle ---------- */
+  function laufe(IC){
+    var D = IC.DEFAULTS;
+    function mit(o){
+      var z = {};
+      for (var k in D) if (Object.prototype.hasOwnProperty.call(D, k)) z[k] = D[k];
+      for (var j in o) if (Object.prototype.hasOwnProperty.call(o, j)) z[j] = o[j];
+      return z;
+    }
+
+    /* ===== Szenario A – Default-Werte, EK im Auto-Modus ===== */
+    gruppe('Szenario A – Default-Werte (EK im Auto-Modus)');
+    var a = IC.berechne(mit({}));
+    pruefe('Kaufpreis inkl. NK',                 a.kaufpreisInklNK,          190519.00);
+    pruefe('Eigenkapital (auto)',                a.eigenkapital,              20519.00);
+    pruefe('Fremdkapital',                       a.fremdkapital,             170000.00);
+    pruefe('Zinsen / Monat',                     a.zinsenMonat,                 566.67);
+    pruefe('Tilgung / Monat',                    a.tilgungMonat,                212.50);
+    pruefe('Gebäudewert',                        a.gebaeudewert,             142889.25);
+    pruefe('AfA / Monat',                        a.afaMonat,                    357.22);
+    pruefe('Zu versteuerndes Ergebnis / Monat',  a.zuVersteuernMonat,          -103.89);
+    pruefe('Steuern / Monat',                    a.steuernMonat,                 43.63);
+    pruefe('Cashflow vor Steuern / Monat',       a.cashflowVorSteuernMonat,      40.83);
+    pruefe('Cashflow nach Steuern / Monat',      a.cashflowNachSteuernMonat,     84.47);
+    pruefe('Cashflow nach Steuern / Jahr',       a.cashflowNachSteuernJahr,    1013.60);
+    pruefe('Bruttorendite (%)',                  a.bruttorendite * 100,           6.35);
+    pruefe('Kaufpreis-Faktor',                   a.kaufpreisFaktor,              15.74);
+    pruefe('Kaufpreis pro m²',                   a.kaufpreisProQm,             3090.91);
+    pruefe('Break-even Kaufpreis',               a.breakEvenKaufpreis,       206712.32);
+    pruefe('Break-even Kaltmiete / Monat',       a.breakEvenKaltmiete,          754.37);
+    pruefe('Emoji',                              a.emoji,                        '🤑');
+    pruefe('Label negativ?',                     a.negativ,                     false);
+    pruefe('Anzeige Bruttorendite',              IC.fmtPct(a.bruttorendite),  '6,35 %');
+    pruefe('Anzeige Faktor',                     IC.fmtFaktor(a.kaufpreisFaktor), '15,74x');
+    pruefe('Anzeige Kaufpreis inkl. NK',         IC.fmtEuroGlatt(a.kaufpreisInklNK), '190.519 €');
+    pruefe('Anzeige Cashflow n. St. / Monat',    IC.fmtEuroCent(a.cashflowNachSteuernMonat), '84,47 €');
+    pruefe('15-%-Warnung inaktiv',               a.warnung15,                   false);
+
+    /* ===== Szenario B – negativer Cashflow ===== */
+    gruppe('Szenario B – negativer Cashflow');
+    var b = IC.berechne(mit({
+      kaufpreis:320000, kaltmieteMonat:1050, groesse:78, grestSatz:0.05,
+      hausgeldNichtUmlegbar:140, zinsSatz:0.0425, tilgungSatz:0.02,
+      ihRuecklage:0.50, mietausfall:0.02, afaSatz:0.02, grenzsteuersatz:0.35
+    }));
+    pruefe('Kaufpreis inkl. NK',                 b.kaufpreisInklNK,          353824.00);
+    pruefe('Fremdkapital',                       b.fremdkapital,             320000.00);
+    pruefe('Zinsen / Monat',                     b.zinsenMonat,                1133.33);
+    pruefe('AfA / Monat',                        b.afaMonat,                    442.28);
+    pruefe('Steuern / Monat',                    b.steuernMonat,                232.96);
+    pruefe('Cashflow vor Steuern / Monat',       b.cashflowVorSteuernMonat,    -816.67);
+    pruefe('Cashflow nach Steuern / Monat',      b.cashflowNachSteuernMonat,   -583.70);
+    pruefe('Break-even Kaufpreis',               b.breakEvenKaufpreis,       152510.49);
+    pruefe('Break-even Kaltmiete / Monat',       b.breakEvenKaltmiete,         1976.51);
+    pruefe('Emoji',                              b.emoji,                        '🤔');
+    pruefe('als negativ erkannt (Sparbeitrag)',  b.negativ,                      true);
+    pruefe('Anzeige Cashflow n. St. / Monat',    IC.fmtEuroCent(b.cashflowNachSteuernMonat), '-583,70 €');
+
+    /* ===== Szenario C – manuelles EK + Zusatzkosten ===== */
+    gruppe('Szenario C – manuelles Eigenkapital + Zusatzkosten');
+    var c = IC.berechne(mit({
+      ekAuto:false, eigenkapital:60000, zusatzkosten:25000, gebaeudeanteil:0.80
+    }));
+    pruefe('Kaufpreis inkl. NK',                 c.kaufpreisInklNK,          215519.00);
+    pruefe('Fremdkapital',                       c.fremdkapital,             155519.00);
+    pruefe('Zinsen / Monat',                     c.zinsenMonat,                 518.40);
+    pruefe('Gebäudewert',                        c.gebaeudewert,             172415.20);
+    pruefe('AfA / Monat',                        c.afaMonat,                    431.04);
+    pruefe('Cashflow vor Steuern / Monat',       c.cashflowVorSteuernMonat,     107.20);
+    pruefe('Cashflow nach Steuern / Monat',      c.cashflowNachSteuernMonat,    161.57);
+    pruefe('Break-even Kaufpreis',               c.breakEvenKaufpreis,       231521.88);
+    pruefe('Break-even Kaltmiete / Monat',       c.breakEvenKaltmiete,          621.44);
+    pruefe('15-%-Warnung NICHT aktiv',           c.warnung15,                   false);
+    pruefe('Grenze 15 % des Gebäudeanteils',     0.15 * c.gebaeudewert,       25862.28);
+    pruefe('EK bleibt bei manuellem Betrag',     c.eigenkapital,              60000.00);
+    pruefe('keine EK-Fußnote im Manuell-Modus',  c.breakEvenEigenkapital,        null);
+
+    /* ===== Szenario C2 – 15-%-Warnung schlägt an ===== */
+    gruppe('Szenario C2 – 15-%-Regel (Gegenprobe)');
+    var c2 = IC.berechne(mit({
+      ekAuto:false, eigenkapital:60000, zusatzkosten:26000, gebaeudeanteil:0.80
+    }));
+    pruefeWahr('Warnung aktiv bei 26.000 € Zusatzkosten', c2.warnung15 === true);
+    pruefeWahr('Warnung inaktiv bei 25.000 € Zusatzkosten', c.warnung15 === false);
+
+    /* ===== Break-even-Verhalten des Eigenkapitals ===== */
+    gruppe('Break-even – Eigenkapital-Verhalten');
+    pruefe('EK-Fußnote im Auto-Modus (Szenario A)', a.breakEvenEigenkapital,
+           206712.3190 * (0.0357 + 0.02 + 0.065), 0.05);
+    pruefeWahr('Break-even A liegt tatsächlich bei 0 €',
+      Math.abs(IC.berechne(mit({kaufpreis:a.breakEvenKaufpreis})).cashflowNachSteuernMonat) < TOL);
+    pruefeWahr('Break-even-Kaltmiete A liegt tatsächlich bei 0 €',
+      Math.abs(IC.berechne(mit({kaltmieteMonat:a.breakEvenKaltmiete})).cashflowNachSteuernMonat) < TOL);
+    pruefeWahr('Break-even B (Kaufpreis) liegt tatsächlich bei 0 €',
+      Math.abs(IC.berechne(mit({
+        kaufpreis:b.breakEvenKaufpreis, kaltmieteMonat:1050, groesse:78, grestSatz:0.05,
+        hausgeldNichtUmlegbar:140, zinsSatz:0.0425, tilgungSatz:0.02,
+        ihRuecklage:0.50, mietausfall:0.02, afaSatz:0.02, grenzsteuersatz:0.35
+      })).cashflowNachSteuernMonat) < TOL);
+    pruefeWahr('Break-even C (manuelles EK) liegt tatsächlich bei 0 €',
+      Math.abs(IC.berechne(mit({
+        ekAuto:false, eigenkapital:60000, zusatzkosten:25000, gebaeudeanteil:0.80,
+        kaufpreis:c.breakEvenKaufpreis
+      })).cashflowNachSteuernMonat) < TOL);
+
+    /* ===== Szenario D – Edge Cases ===== */
+    gruppe('Szenario D – Edge Cases');
+
+    var leer = {objekt:'', ekAuto:true};
+    for (var f in IC.FELDER) if (Object.prototype.hasOwnProperty.call(IC.FELDER, f)) leer[f] = null;
+    var d0 = IC.berechne(leer);
+    var alleEndlich = true, verdaechtig = [];
+    for (var k in d0) {
+      if (!Object.prototype.hasOwnProperty.call(d0, k)) continue;
+      var v = d0[k];
+      if (typeof v === 'number' && !isFinite(v)) { alleEndlich = false; verdaechtig.push(k); }
+    }
+    pruefeWahr('Alle Felder leer: kein NaN/Infinity' + (verdaechtig.length ? ' (' + verdaechtig.join(', ') + ')' : ''), alleEndlich);
+    pruefe('Alle Felder leer: Cashflow n. St.',   d0.cashflowNachSteuernMonat,      0);
+    pruefe('Alle Felder leer: Anzeige Cashflow',  IC.fmtEuroCent(d0.cashflowNachSteuernMonat), '0,00 €');
+    pruefe('Alle Felder leer: Bruttorendite',     IC.fmtPct(d0.bruttorendite),    '—');
+    pruefe('Alle Felder leer: Faktor',            IC.fmtFaktor(d0.kaufpreisFaktor), '—');
+    pruefe('Alle Felder leer: Kaufpreis pro m²',  IC.fmtEuroGlatt(d0.kaufpreisProQm), '—');
+    pruefe('Alle Felder leer: Break-even KP',     d0.breakEvenKaufpreis,         null);
+    pruefe('Alle Felder leer: Break-even Miete',  d0.breakEvenKaltmiete,         null);
+
+    var dGroesse = IC.berechne(mit({groesse:0}));
+    pruefe('Größe 0: Kaufpreis pro m²',           IC.fmtEuroGlatt(dGroesse.kaufpreisProQm), '—');
+    pruefeWahr('Größe 0: Cashflow bleibt endlich', isFinite(dGroesse.cashflowNachSteuernMonat));
+
+    var dMiete = IC.berechne(mit({kaltmieteMonat:0}));
+    pruefe('Kaltmiete 0: Bruttorendite',          IC.fmtPct(dMiete.bruttorendite),  '—');
+    pruefe('Kaltmiete 0: Faktor',                 IC.fmtFaktor(dMiete.kaufpreisFaktor), '—');
+    pruefeWahr('Kaltmiete 0: Cashflow rechnet weiter', isFinite(dMiete.cashflowNachSteuernMonat));
+
+    var dKp = IC.berechne(mit({kaufpreis:0}));
+    pruefe('Kaufpreis 0: Bruttorendite',          IC.fmtPct(dKp.bruttorendite),     '—');
+
+    var dNull = IC.berechne(mit({zinsSatz:0, tilgungSatz:0}));
+    pruefeWahr('Zins 0 % & Tilgung 0 %: kein NaN', isFinite(dNull.cashflowNachSteuernMonat));
+    pruefeWahr('Zins 0 % & Tilgung 0 %: Break-even sauber (Zahl oder null)',
+      dNull.breakEvenKaufpreis === null || isFinite(dNull.breakEvenKaufpreis));
+
+    var dGross = IC.berechne(mit({kaufpreis:999999999}));
+    pruefeWahr('Kaufpreis 999.999.999: endlich', isFinite(dGross.cashflowNachSteuernMonat));
+    pruefeWahr('Kaufpreis 999.999.999: Anzeige ohne NaN',
+      IC.fmtEuroGlatt(dGross.kaufpreisInklNK).indexOf('NaN') < 0);
+
+    /* ===== Parsing ===== */
+    gruppe('Eingabe-Parsing (deutsch & englisch)');
+    pruefe('"1.234,56"',    IC.parseZahl('1.234,56'),  1234.56);
+    pruefe('"1234.56"',     IC.parseZahl('1234.56'),   1234.56);
+    pruefe('"1 234,56"',    IC.parseZahl('1 234,56'),  1234.56);
+    pruefe('"1234,56"',     IC.parseZahl('1234,56'),   1234.56);
+    pruefe('"170.000"',     IC.parseZahl('170.000'),   170000);
+    pruefe('"1.234.567"',   IC.parseZahl('1.234.567'), 1234567);
+    pruefe('"0.500"',       IC.parseZahl('0.500'),     0.5);
+    pruefe('"3,57"',        IC.parseZahl('3,57'),      3.57);
+    pruefe('"170000 €"',    IC.parseZahl('170000 €'),  170000);
+    pruefe('"4,00 %"',      IC.parseZahl('4,00 %'),    4);
+    pruefe('leerer String', IC.parseZahl(''),          null);
+    pruefe('"abc"',         IC.parseZahl('abc'),       null);
+    pruefe('"-"',           IC.parseZahl('-'),         null);
+    pruefe('Prozentfeld "3,57" -> Bruch', IC.parseFeld('maklerSatz', '3,57'), 0.0357);
+    pruefe('Eurofeld "170.000" -> Zahl',  IC.parseFeld('kaufpreis', '170.000'), 170000);
+
+    /* ===== Formatierung & Klemmung ===== */
+    gruppe('Formatierung – nie NaN, Infinity, undefined oder -0 €');
+    pruefe('fmtEuroGlatt(NaN)',       IC.fmtEuroGlatt(NaN),        '—');
+    pruefe('fmtEuroGlatt(Infinity)',  IC.fmtEuroGlatt(Infinity),   '—');
+    pruefe('fmtEuroGlatt(undefined)', IC.fmtEuroGlatt(undefined),  '—');
+    pruefe('fmtEuroGlatt(null)',      IC.fmtEuroGlatt(null),       '—');
+    pruefe('fmtEuroGlatt(-0)',        IC.fmtEuroGlatt(-0),         '0 €');
+    pruefe('fmtEuroGlatt(-0,004)',    IC.fmtEuroGlatt(-0.004),     '0 €');
+    pruefe('fmtEuroCent(-0,004)',     IC.fmtEuroCent(-0.004),      '0,00 €');
+    pruefe('fmtEuroGlatt(0)',         IC.fmtEuroGlatt(0),          '0 €');
+    pruefe('fmtEuroGlatt(170000)',    IC.fmtEuroGlatt(170000),     '170.000 €');
+    pruefe('fmtEuroCent(-583,7)',     IC.fmtEuroCent(-583.7),      '-583,70 €');
+    pruefe('fmtPct(NaN)',             IC.fmtPct(NaN),              '—');
+    pruefe('fmtFaktor(Infinity)',     IC.fmtFaktor(Infinity),      '—');
+    pruefe('fmtEurQm(0)',             IC.fmtEurQm(0),              '0,00 €/m²');
+
+    gruppe('Klemmung ungültiger Eingaben');
+    pruefe('negativer Kaufpreis -> 0',        IC.norm({kaufpreis:-5000}).kaufpreis,            0);
+    pruefe('Grenzsteuersatz 80 % -> 50 %',    IC.norm({grenzsteuersatz:0.8}).grenzsteuersatz,  0.5);
+    pruefe('Gebäudeanteil 150 % -> 100 %',    IC.norm({gebaeudeanteil:1.5}).gebaeudeanteil,    1);
+    pruefe('Zins 200 % -> 100 %',             IC.norm({zinsSatz:2}).zinsSatz,                  1);
+    pruefe('Kaufpreis 2 Mrd. -> 1 Mrd.',      IC.norm({kaufpreis:2e9}).kaufpreis,              1e9);
+    pruefe('leeres Feld -> 0',                IC.norm({kaufpreis:null}).kaufpreis,             0);
+    pruefe('NaN-Eingabe -> 0',                IC.norm({kaufpreis:NaN}).kaufpreis,              0);
+
+    zeichne();
+  }
+
+  ladeEngine().then(laufe).catch(fehlerAnzeigen);
+})();
+</script>
+</body>
+</html>
