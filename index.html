@@ -6,6 +6,7 @@
 <meta name="color-scheme" content="light">
 <meta name="description" content="Cashflow-Rechner für Kapitalanleger by @immo.cousins – berechne in unter einer Minute, was nach Steuern von deiner Immobilie übrig bleibt.">
 <meta name="robots" content="index,follow">
+<link rel="canonical" href="https://immocousins.de/cashflowrechner/">
 <title>Cashflow-Rechner für Kapitalanleger | immo.cousins</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230F5C55'/><text x='16' y='23' text-anchor='middle' font-family='system-ui,sans-serif' font-size='19' font-weight='700' fill='%23E8B84B'>&#8364;</text></svg>">
 <style>
@@ -505,25 +506,184 @@ footer a{color:var(--grau-600);margin:0 8px;display:inline-block;padding:10px 0}
 }
 
 /* ============================================================
+   Tor: Kontaktdaten vor dem Rechner
+   ============================================================ */
+#tor{padding:28px 0 48px}
+#tor[hidden]{display:none}
+.tor-karte{
+  background:var(--weiss);
+  border:1px solid var(--mint-300);
+  border-radius:var(--radius);
+  box-shadow:var(--schatten);
+  padding:24px 18px;
+}
+.tor-kopf{text-align:center;margin-bottom:20px}
+.tor-kopf img{
+  width:96px;height:96px;border-radius:50%;
+  display:block;margin:0 auto 14px;background:var(--mint-050);object-fit:cover;
+}
+.tor-kopf h1{font-size:1.375rem;margin:0 0 8px}
+.tor-kopf p{color:var(--grau-600);margin:0;font-size:.9375rem}
+.tor-paar{display:grid;gap:14px}
+@media (min-width:520px){.tor-paar{grid-template-columns:1fr 1fr}}
+.tor-feld{margin:0 0 14px}
+.tor-feld label{
+  display:block;font-size:.875rem;font-weight:600;
+  color:var(--petrol-900);margin-bottom:6px;
+}
+.tor-feld label .opt{font-weight:400;color:var(--grau-600)}
+.tor-feld input{
+  -webkit-appearance:none;appearance:none;width:100%;
+  font-family:inherit;font-size:16px;line-height:1.4;color:var(--grau-900);
+  background:var(--flaeche);border:1px solid transparent;
+  border-radius:var(--radius-sm);padding:13px 14px;min-height:48px;
+}
+.tor-feld input:focus{background:var(--weiss);border-color:var(--mint-300)}
+.tor-einwilligung{
+  display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;margin:4px 0 18px;
+}
+.tor-einwilligung input[type=checkbox]{
+  width:22px;height:22px;margin:2px 0 0;accent-color:var(--petrol-700);
+  cursor:pointer;position:relative;flex:0 0 auto;
+}
+.tor-einwilligung input[type=checkbox]::after{
+  content:"";position:absolute;top:50%;left:50%;
+  width:44px;height:44px;transform:translate(-50%,-50%);
+}
+.tor-einwilligung label{
+  font-size:.8125rem;line-height:1.5;color:var(--grau-900);cursor:pointer;
+}
+.tor-honig{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.tor-fehler{color:var(--rot-warn);font-size:.8125rem;margin:10px 0 0}
+.tor-fehler:empty{display:none}
+.tor-hinweis{
+  color:var(--grau-600);font-size:.75rem;line-height:1.5;margin:14px 0 0;
+}
+.tor-zurueck{display:block;text-align:center;margin:16px 0 0;font-size:.8125rem}
+
+
+/* ============================================================
+   Anleitungsvideo
+   Kleiner Hinweis unten rechts, der sich gross aufziehen laesst.
+   Entscheidend: preload="none" und die Quelle wird erst beim ersten
+   Oeffnen gesetzt - vorher laedt der Browser kein einziges Byte.
+   ============================================================ */
+.vid-hinweis{
+  position:fixed;right:12px;z-index:45;
+  bottom:calc(var(--bar-h) + env(safe-area-inset-bottom) + 12px);
+  transition:transform .28s ease, opacity .2s ease;
+}
+.vid-hinweis[hidden]{display:none}
+.vid-hinweis.weg{transform:translateY(190%);opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.vid-hinweis{transition:none}}
+
+.vid-oeffnen{
+  display:flex;align-items:center;gap:10px;
+  width:min(17.5rem, calc(100vw - 24px));
+  padding:8px 14px 8px 8px;border-radius:14px;
+  background:var(--weiss);border:1px solid var(--mint-300);
+  box-shadow:0 8px 28px rgba(15,92,85,.20);
+  font:inherit;text-align:left;color:var(--grau-900);cursor:pointer;
+  transition:background .15s ease;
+}
+.vid-oeffnen:hover{background:var(--mint-050)}
+.vid-bild{position:relative;flex:0 0 auto;line-height:0}
+.vid-bild img{
+  width:76px;height:43px;object-fit:cover;border-radius:8px;
+  background:var(--flaeche);display:block;
+}
+.vid-play{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:26px;height:26px;border-radius:50%;
+  background:rgba(15,92,85,.88);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.625rem;padding-left:2px;
+}
+.vid-text{display:block;min-width:0}
+.vid-text b{display:block;color:var(--petrol-900);font-size:.875rem;font-weight:700;line-height:1.3}
+.vid-text span{display:block;color:var(--grau-600);font-size:.75rem;line-height:1.35;margin-top:2px}
+.vid-weg{
+  position:absolute;top:-9px;right:-7px;
+  width:26px;height:26px;border-radius:50%;
+  background:var(--petrol-900);color:#fff;border:2px solid var(--weiss);
+  font-size:.6875rem;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;
+}
+.vid-weg::after{
+  content:"";position:absolute;top:50%;left:50%;width:44px;height:44px;
+  transform:translate(-50%,-50%);
+}
+
+/* Grosse Ansicht */
+.vid-buehne{
+  position:fixed;inset:0;z-index:80;
+  display:flex;align-items:center;justify-content:center;padding:16px;
+}
+.vid-buehne[hidden]{display:none}
+.vid-blende{
+  position:absolute;inset:0;background:rgba(15,92,85,.78);
+  border:0;padding:0;margin:0;cursor:pointer;
+}
+.vid-rahmen{position:relative;width:min(980px,100%)}
+.vid-rahmen video{
+  width:100%;height:auto;max-height:calc(100vh - 88px);
+  display:block;border-radius:14px;background:#000;
+}
+.vid-zu{
+  position:absolute;top:-46px;right:0;
+  min-height:38px;padding:8px 16px;border-radius:999px;
+  background:var(--weiss);color:var(--petrol-900);border:0;
+  font:inherit;font-size:.875rem;font-weight:650;cursor:pointer;
+}
+.vid-zu:hover{background:var(--mint-100)}
+
+/* ============================================================
    Sticky-Bar
    ============================================================ */
 .sticky-bar{
   position:fixed;left:0;right:0;bottom:0;z-index:40;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  display:flex;align-items:stretch;gap:8px;
   width:100%;
   min-height:var(--bar-h);
-  padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+  padding:8px 12px calc(8px + env(safe-area-inset-bottom));
   background:var(--weiss);
-  border:0;border-top:1px solid var(--mint-300);
+  border-top:1px solid var(--mint-300);
   box-shadow:0 -4px 20px rgba(15,92,85,.10);
-  font:inherit;text-align:left;cursor:pointer;
   transform:translateY(0);
   transition:transform .18s ease;
+}
+/* Linke Hälfte: Ergebnis, öffnet das Bottom-Sheet */
+.sb-ergebnis{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  flex:1 1 auto;min-width:0;
+  background:none;border:0;padding:4px 2px;margin:0;
+  font:inherit;text-align:left;color:inherit;cursor:pointer;
+}
+/* Rechte Hälfte: direkter Weg zum Termin */
+.sb-termin{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  flex:0 0 auto;
+  min-height:48px;padding:0 16px;
+  border-radius:999px;
+  background:var(--petrol-700);color:var(--weiss);
+  font:inherit;font-size:.875rem;font-weight:700;
+  text-decoration:none;white-space:nowrap;
+  transition:background .15s ease;
+}
+.sb-termin:hover{background:var(--petrol-900)}
+.sb-termin .sb-icon{font-size:1rem;line-height:1}
+/* Auf sehr schmalen Geräten nur das Symbol - Tap-Ziel bleibt 48px */
+@media (max-width:359px){
+  .sb-termin{padding:0 14px}
+  .sb-termin .sb-text{display:none}
 }
 .sticky-bar[hidden]{display:none}
 .sticky-bar.weg{transform:translateY(110%)}
 .sticky-bar .k{
   color:var(--grau-600);font-size:.75rem;line-height:1.3;min-width:0;
+}
+.sticky-bar .k span,.sticky-bar .k b{
+  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .sticky-bar .k b{display:block;color:var(--petrol-900);font-size:.8125rem;font-weight:700}
 .sticky-bar .rechts{display:flex;align-items:center;gap:8px;flex:0 0 auto}
@@ -576,6 +736,10 @@ footer a{color:var(--grau-600);margin:0 8px;display:inline-block;padding:10px 0}
 }
 .sheet-zu:hover{background:var(--mint-100)}
 .sheet-text{color:var(--grau-900);font-size:.9375rem;line-height:1.6;margin:0}
+.sheet-cta-text{
+  color:var(--grau-600);font-size:.8125rem;line-height:1.5;
+  margin:16px 0 10px;text-align:center;
+}
 
 /* Toast */
 .toast{
@@ -604,7 +768,8 @@ footer a{color:var(--grau-600);margin:0 8px;display:inline-block;padding:10px 0}
 @media print{
   @page{margin:12mm}
   body{padding:0;background:#fff;font-size:10.5pt}
-  .hero img,.sticky-bar,.aktionen,.reset-zeile,.merken,.cta,.intro-toggle,.info,.sheet,.toast{display:none !important}
+  .hero img,.sticky-bar,.aktionen,.reset-zeile,.merken,.cta,.intro-toggle,.info,.sheet,.toast,
+  .vid-hinweis,.vid-buehne{display:none !important}
   .termin{background:#fff;border:1px solid #BBB;text-align:left;padding:10px;break-inside:avoid}
   .termin h2{font-size:1rem}
   .termin .btn{
@@ -632,12 +797,64 @@ footer a{color:var(--grau-600);margin:0 8px;display:inline-block;padding:10px 0}
 </head>
 <body>
 
+<!-- ===================== Tor: Kontaktdaten ===================== -->
+<section id="tor" class="wrap" hidden aria-labelledby="torTitel">
+  <div class="tor-karte">
+    <div class="tor-kopf">
+      <picture>
+        <source srcset="immo-cousins-hero.webp" type="image/webp">
+        <img src="immo-cousins-hero.png" width="96" height="96"
+             alt="Die immo.cousins – Navid und Nikan aus Köln">
+      </picture>
+      <h1 id="torTitel">Noch ein Schritt bis zum Rechner</h1>
+      <p>Sag uns kurz, wer du bist – danach ist der Cashflow-Rechner offen und du kannst ihn unbegrenzt nutzen.</p>
+    </div>
+
+    <form id="torForm" novalidate>
+      <div class="tor-paar">
+        <div class="tor-feld">
+          <label for="tVorname">Vorname</label>
+          <input type="text" id="tVorname" autocomplete="given-name" enterkeyhint="next" required>
+        </div>
+        <div class="tor-feld">
+          <label for="tNachname">Nachname</label>
+          <input type="text" id="tNachname" autocomplete="family-name" enterkeyhint="next" required>
+        </div>
+      </div>
+      <div class="tor-feld">
+        <label for="tMail">E-Mail</label>
+        <input type="email" id="tMail" autocomplete="email" inputmode="email" enterkeyhint="next" required>
+      </div>
+      <div class="tor-feld">
+        <label for="tTel">Telefonnummer</label>
+        <input type="tel" id="tTel" autocomplete="tel" inputmode="tel" enterkeyhint="done">
+      </div>
+      <div class="tor-honig" aria-hidden="true">
+        <label for="tWebsite">Website</label>
+        <input type="text" id="tWebsite" tabindex="-1" autocomplete="off">
+      </div>
+      <div class="tor-einwilligung">
+        <input type="checkbox" id="tDsgvo" required>
+        <label for="tDsgvo">Ich habe die <a href="/datenschutz/" target="_blank" rel="noopener">Datenschutzerklärung</a> gelesen und bin damit einverstanden, dass meine Angaben gespeichert und zur Kontaktaufnahme genutzt werden.</label>
+      </div>
+      <button type="submit" class="btn btn-tuerkis btn-block" id="torSenden">Rechner öffnen →</button>
+      <p class="tor-fehler" id="torFehler" role="status"></p>
+      <p class="tor-hinweis">Verantwortlich ist die Heimkauf CGN GmbH, Pilgrimstr. 6, 50674 Köln. Wir nutzen deine Angaben, um dich zu deinem Vorhaben zu beraten. Kein Newsletter, keine Weitergabe an Dritte. Du kannst die Löschung jederzeit verlangen.</p>
+    </form>
+
+    <a class="tor-zurueck" href="/">← Zurück zu immo.cousins</a>
+  </div>
+</section>
+
 <main class="wrap">
 
   <!-- ===================== Hero ===================== -->
   <header class="hero">
-    <img src="immo-cousins-hero.png" width="140" height="140"
-         alt="Die immo.cousins – zwei Immobilien-Investoren aus Köln">
+    <picture>
+      <source srcset="immo-cousins-hero.webp" type="image/webp">
+      <img src="immo-cousins-hero.png" width="140" height="140"
+           alt="Die immo.cousins – zwei Immobilien-Investoren aus Köln">
+    </picture>
     <h1>Cashflow-Rechner für Kapitalanleger</h1>
     <p class="sub">by @immo.cousins</p>
     <p class="claim">Steueroptimierter Vermögensaufbau mit Immobilien – trag deine Zahlen ein und leg direkt los!</p>
@@ -1186,23 +1403,54 @@ footer a{color:var(--grau-600);margin:0 8px;display:inline-block;padding:10px 0}
 
   <footer>
     <a href="https://heimkauf.de/impressum/" target="_blank" rel="noopener">Impressum</a> ·
-    <a href="https://heimkauf.de/privacy-policy/" target="_blank" rel="noopener">Datenschutz</a>
+    <a href="/datenschutz/">Datenschutz</a>
     <p>© Heimkauf CGN GmbH · immo.cousins</p>
   </footer>
 
 </main>
 
 <!-- ===================== Sticky-Bar ===================== -->
-<button type="button" class="sticky-bar" id="stickyBar" aria-haspopup="dialog">
-  <span class="k"><span data-label="stickyKurz">Cashflow nach Steuern</span><b data-label="stickyMonat">/ Monat</b></span>
-  <span class="rechts">
-    <span class="badge plus" data-badge="cfNachMonat">
-      <span class="emoji" data-out="emoji" aria-hidden="true">🤑</span>
-      <span class="num" data-out="cfNachMonat">—</span>
+<!-- ===================== Anleitungsvideo ===================== -->
+<div class="vid-hinweis" id="vidHinweis" hidden>
+  <button type="button" class="vid-oeffnen" id="vidOeffnen" aria-haspopup="dialog">
+    <span class="vid-bild">
+      <img src="video/anleitung-standbild.webp" width="76" height="43" alt="" loading="lazy" decoding="async">
+      <span class="vid-play" aria-hidden="true">&#9654;</span>
     </span>
-    <span class="pfeil" aria-hidden="true">▲</span>
-  </span>
-</button>
+    <span class="vid-text">
+      <b>Anleitung ansehen</b>
+      <span>So funktioniert der Rechner &middot; 10 Min.</span>
+    </span>
+  </button>
+  <button type="button" class="vid-weg" id="vidWeg" aria-label="Hinweis auf die Anleitung ausblenden">&#10005;</button>
+</div>
+
+<div class="vid-buehne" id="vidBuehne" hidden role="dialog" aria-modal="true"
+     aria-label="Anleitung zum Cashflow-Rechner">
+  <button type="button" class="vid-blende" data-vid-zu aria-label="Video schließen" tabindex="-1"></button>
+  <div class="vid-rahmen">
+    <button type="button" class="vid-zu" data-vid-zu>Schließen &#10005;</button>
+    <video id="vidPlayer" controls playsinline preload="none"
+           poster="video/anleitung-standbild.webp" width="1280" height="720"></video>
+  </div>
+</div>
+
+<div class="sticky-bar" id="stickyBar">
+  <button type="button" class="sb-ergebnis" id="stickyErgebnis" aria-haspopup="dialog">
+    <span class="k"><span data-label="stickyKurz">Cashflow nach Steuern</span><b data-label="stickyMonat">/ Monat</b></span>
+    <span class="rechts">
+      <span class="badge plus" data-badge="cfNachMonat">
+        <span class="emoji" data-out="emoji" aria-hidden="true">🤑</span>
+        <span class="num" data-out="cfNachMonat">—</span>
+      </span>
+      <span class="pfeil" aria-hidden="true">▲</span>
+    </span>
+  </button>
+  <a class="sb-termin" href="https://calendly.com/nikan-heimkauf/45min"
+     target="_blank" rel="noopener" aria-label="Kostenfreien Termin bei Nikan buchen">
+    <span class="sb-icon" aria-hidden="true">📅</span><span class="sb-text">Termin</span>
+  </a>
+</div>
 
 <!-- ===================== Sheet: Hilfetexte ===================== -->
 <div class="sheet" id="hilfeSheet" hidden role="dialog" aria-modal="true" aria-labelledby="hilfeTitel">
@@ -1245,6 +1493,10 @@ footer a{color:var(--grau-600);margin:0 8px;display:inline-block;padding:10px 0}
       <span class="k" data-label="cfNachJahr">Cashflow NACH Steuern / Jahr:</span>
       <span class="v num" data-out="cfNachJahr">—</span>
     </div>
+
+    <p class="sheet-cta-text">Unsicher, ob die Zahlen tragen? Schau mit uns gemeinsam drauf – 45 Minuten, kostenfrei.</p>
+    <a class="btn btn-tuerkis btn-block" href="https://calendly.com/nikan-heimkauf/45min"
+       target="_blank" rel="noopener">Kostenfreien Termin buchen →</a>
   </div>
 </div>
 
@@ -1603,7 +1855,7 @@ var IC = (function () {
     cfNachMonatPlain: ['Cashflow NACH Steuern / Monat',  'Sparbeitrag / Monat'],
     cfNachJahr:       ['Cashflow NACH Steuern / Jahr:',  'Sparbeitrag / Jahr:'],
     cfNachJahrKurz:   ['Cashflow NACH Steuern / Jahr',   'Sparbeitrag / Jahr'],
-    stickyKurz:       ['Cashflow nach Steuern',          'Sparbeitrag'],
+    stickyKurz:       ['Nach Steuern',                    'Sparbeitrag'],
     stickyMonat:      ['/ Monat',                        '/ Monat']
   };
 
@@ -2078,8 +2330,9 @@ var IC = (function () {
     }
 
     /* Ergebnis-Sheet über die Sticky-Bar */
-    stickyBar.addEventListener('click', function () {
-      sheetAuf(document.getElementById('ergebnisSheet'), stickyBar);
+    var stickyErgebnis = document.getElementById('stickyErgebnis');
+    stickyErgebnis.addEventListener('click', function () {
+      sheetAuf(document.getElementById('ergebnisSheet'), stickyErgebnis);
     });
 
     /* Aktionen */
@@ -2114,6 +2367,8 @@ var IC = (function () {
       var pruefeTastatur = function () {
         var tastaturOffen = (window.innerHeight - vv.height) > 140;
         stickyBar.classList.toggle('weg', tastaturOffen);
+        var vh = document.getElementById('vidHinweis');
+        if (vh && !vh.hidden) vh.classList.toggle('weg', tastaturOffen);
         document.body.classList.toggle('bar-aus', tastaturOffen);
       };
       vv.addEventListener('resize', pruefeTastatur);
@@ -2147,6 +2402,165 @@ var IC = (function () {
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
+})();
+</script>
+
+<script>
+/* ============================================================
+   Tor: fragt einmal pro Sitzung die Kontaktdaten ab, bevor der
+   Rechner sichtbar wird. Die Freischaltung merkt sich die Seite nur
+   fuer die laufende Sitzung (sessionStorage) - nichts bleibt liegen,
+   wenn der Tab geschlossen wird.
+   ============================================================ */
+(function () {
+  'use strict';
+  var TOR_KEY = 'ic-tor-frei';
+  /* Diese Adresse ist der offene Weg: Wer /cashflowrechner/ direkt aufruft,
+     kommt ohne Formular hinein. Das Tor erscheint nur, wenn die Seite mit
+     ?start=1 aufgerufen wird - so verlinkt es die Startseite. */
+
+  var tor      = document.getElementById('tor');
+  var inhalt   = document.querySelector('main.wrap');
+  var bar      = document.getElementById('stickyBar');
+  var form     = document.getElementById('torForm');
+  var fehler   = document.getElementById('torFehler');
+  var knopf    = document.getElementById('torSenden');
+  var wert     = function (id) { return document.getElementById(id).value.trim(); };
+
+  function frei() {
+    try { return sessionStorage.getItem(TOR_KEY) === '1'; } catch (e) { return false; }
+  }
+  function freigeben() {
+    try { sessionStorage.setItem(TOR_KEY, '1'); } catch (e) { /* egal */ }
+    try {
+      var such = new URLSearchParams(window.location.search);
+      if (such.has('start')) {
+        such.delete('start');
+        var rest = such.toString();
+        history.replaceState(null, '',
+          window.location.pathname + (rest ? '?' + rest : '') + window.location.hash);
+      }
+    } catch (e) { /* Adresszeile bleibt, wie sie ist */ }
+    tor.hidden = true;
+    inhalt.hidden = false;
+    if (bar) bar.hidden = false;
+    document.title = 'Cashflow-Rechner für Kapitalanleger | immo.cousins';
+    window.scrollTo(0, 0);
+  }
+  function sperren() {
+    inhalt.hidden = true;
+    if (bar) bar.hidden = true;
+    tor.hidden = false;
+    document.getElementById('tVorname').focus({ preventScroll: true });
+  }
+
+  /* Tor nur zeigen, wenn die Startseite es verlangt und die Sitzung es
+     noch nicht hinter sich hat. */
+  var torVerlangt = false;
+  try {
+    torVerlangt = new URLSearchParams(window.location.search).get('start') === '1';
+  } catch (e) { /* ohne URLSearchParams bleibt der Rechner offen */ }
+
+  if (torVerlangt && !frei()) { sperren(); } else { tor.hidden = true; }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    fehler.textContent = '';
+
+    var daten = {
+      quelle:       'rechner',
+      vorname:      wert('tVorname'),
+      nachname:     wert('tNachname'),
+      email:        wert('tMail'),
+      telefon:      wert('tTel'),
+      nachricht:    '',
+      website:      wert('tWebsite'),
+      einwilligung: document.getElementById('tDsgvo').checked
+    };
+
+    var fehlt = [];
+    if (!daten.vorname)  fehlt.push('Vorname');
+    if (!daten.nachname) fehlt.push('Nachname');
+    if (!daten.email || daten.email.indexOf('@') < 1) fehlt.push('eine gültige E-Mail-Adresse');
+    if (!daten.einwilligung) fehlt.push('dein Einverständnis zum Datenschutz');
+    if (fehlt.length) {
+      fehler.textContent = 'Es fehlt noch: ' + fehlt.join(', ') + '.';
+      return;
+    }
+
+    knopf.disabled = true;
+    knopf.textContent = 'Einen Moment …';
+
+    fetch('/api/lead', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(daten)
+    }).then(function (a) {
+      return a.json().catch(function () { return { ok: a.ok }; });
+    }).then(function (antwort) {
+      if (!antwort || !antwort.ok) throw new Error(antwort && antwort.fehler);
+      freigeben();
+    }).catch(function (f) {
+      knopf.disabled = false;
+      knopf.textContent = 'Rechner öffnen →';
+      fehler.textContent = (f && f.message)
+        ? f.message
+        : 'Das hat leider nicht geklappt. Bitte versuch es gleich noch einmal.';
+    });
+  });
+})();
+/* ============================================================
+   Anleitungsvideo
+   Der Hinweis wird erst per Skript sichtbar - ohne Skript koennte
+   man ihn ohnehin nicht oeffnen. Die Videoquelle haengt sich erst
+   beim ersten Klick ein, vorher laedt der Browser nichts.
+   ============================================================ */
+(function () {
+  'use strict';
+  var hinweis = document.getElementById('vidHinweis');
+  var oeffnen = document.getElementById('vidOeffnen');
+  var ausblenden = document.getElementById('vidWeg');
+  var buehne  = document.getElementById('vidBuehne');
+  var spieler = document.getElementById('vidPlayer');
+  if (!hinweis || !oeffnen || !buehne || !spieler) return;
+
+  var QUELLE = 'video/anleitung.mp4';
+  var vorher = null;
+
+  hinweis.hidden = false;
+
+  oeffnen.addEventListener('click', function () {
+    vorher = oeffnen;
+    if (!spieler.getAttribute('src')) spieler.setAttribute('src', QUELLE);
+    buehne.hidden = false;
+    document.documentElement.style.overflow = 'hidden';
+    spieler.focus();
+    var lauf = spieler.play();
+    /* Blockt der Browser die Wiedergabe, bleibt eben das Standbild stehen */
+    if (lauf && lauf.catch) lauf.catch(function () {});
+  });
+
+  function schliessen() {
+    if (buehne.hidden) return;
+    spieler.pause();
+    buehne.hidden = true;
+    document.documentElement.style.overflow = '';
+    /* Zurueck auf den Knopf, der das Video geoeffnet hat - aber nur,
+       wenn der Hinweis ueberhaupt noch da ist. */
+    if (vorher && !hinweis.hidden && document.contains(vorher)) vorher.focus();
+  }
+
+  Array.prototype.forEach.call(buehne.querySelectorAll('[data-vid-zu]'), function (b) {
+    b.addEventListener('click', schliessen);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' || e.key === 'Esc') schliessen();
+  });
+
+  ausblenden.addEventListener('click', function () {
+    hinweis.classList.add('weg');
+    window.setTimeout(function () { hinweis.hidden = true; }, 300);
+  });
 })();
 </script>
 

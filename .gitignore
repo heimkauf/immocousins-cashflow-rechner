@@ -1,1 +1,7 @@
 .DS_Store
+leads.csv
+.wrangler/
+node_modules/
+.env
+.env.*
+*.local

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Testseite gehoert nicht in den Index (wird zusaetzlich per 301 umgeleitet)
+Disallow: /tests.html

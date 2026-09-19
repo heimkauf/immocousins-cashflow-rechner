@@ -14,102 +14,207 @@ als interaktives Web-Tool abbildet. Gedacht als Link-in-Bio-Asset für Instagram
 | `deploy.sh` | Stellt `dist/` mit genau den Dateien zusammen, die live gehen. |
 | `check-live.sh` | Prüft nach dem Deploy DNS, E-Mail, TLS, Header, Redirect und Inhalt. |
 
-## Deploy — Cloudflare Pages auf immocousins.de
+## Live
 
-Kein Build-Schritt, kein npm, keine CDN-Skripte.
+Der Rechner läuft unter **<https://immocousins.de/cashflowrechner/>**.
+
+Die Wurzel `immocousins.de/` leitet per **302** dorthin weiter — bewusst temporär,
+damit dort später eine echte Startseite stehen kann, ohne eine dauerhafte
+Umleitung in den Suchmaschinen zu hinterlassen. `www.immocousins.de` ist
+ebenfalls verbunden.
+
+## Anleitungsvideo
+
+Unten rechts im Rechner sitzt ein kleiner Hinweis mit Standbild; ein Klick zieht
+das Video groß auf, Escape oder ein Klick daneben schließt es wieder. Das × am
+Hinweis blendet ihn für die laufende Sitzung aus — nichts wird gespeichert.
+
+**Der Punkt, auf den es ankommt:** `preload="none"` und die Videoquelle wird
+erst beim ersten Öffnen gesetzt. Beim Seitenaufruf lädt der Browser nur das
+11 KB große Standbild, nicht die 22 MB. Nachgemessen, nicht angenommen.
+
+Die Vorlage war eine 437 MB große Bildschirmaufnahme (1920×1080, 30 fps,
+6,2 Mbit/s, 9:53 min). Der Weg zur ausgelieferten Fassung:
+
+```bash
+ffmpeg -i roh.mov -vf "scale=1280:-2" \
+  -c:v libx264 -preset medium -crf 28 -profile:v high -level 4.0 \
+  -pix_fmt yuv420p -g 60 -c:a aac -b:a 64k -ac 1 \
+  -movflags +faststart video/anleitung.mp4
+```
+
+Ergebnis: 22 MB bei 234 kbit/s, Schrift weiterhin scharf. `+faststart` ist
+Pflicht, sonst muss der Browser erst die ganze Datei holen, bevor er anfängt.
+
+Damit passt das Video unter die **25-MiB-Grenze von Cloudflare Pages** und
+liegt direkt neben der Seite — kein R2, kein zweiter Dienst. Cloudflare liefert
+es mit `accept-ranges: bytes` aus, Vorspulen funktioniert also.
+
+**Offen:** Im Video wird gesprochen, Untertitel gibt es keine. Wer nicht hören
+kann oder ohne Ton schaut, bekommt den Inhalt nicht mit. Eine VTT-Datei
+nachzureichen wäre der saubere Weg.
+
+## Deploy — Cloudflare Pages
+
+Projekt: `immocousins-rechner` (Direct Upload), Account `verwaltung@heimkauf.de`.
+Fallback-Adresse: `immocousins-rechner.pages.dev`.
 
 ```bash
 ./deploy.sh
+npx wrangler pages deploy dist --project-name=immocousins-rechner
 ```
 
-legt `dist/` an — genau die Dateien, die live gehen (`index.html`, Hero-Bild,
-`_headers`, `_redirects`). README, `tests.html` und `deploy.sh` selbst bleiben
-außen vor. Diesen Ordner in Cloudflare unter *Workers & Pages → Create →
-Pages → Upload assets* hochladen.
+`deploy.sh` legt `dist/` an — kein Build-Werkzeug, nur Kopieren:
 
-### Warum die Nameserver zu Cloudflare müssen
+```
+dist/
+  404.html  robots.txt  _headers  _redirects     <- Wurzel
+  cashflowrechner/
+    index.html  immo-cousins-hero.png            <- der Rechner
+```
 
-Der Rechner soll auf dem Apex `immocousins.de` laufen. Ein Apex lässt sich per
-Standard-DNS nicht auf einen Pages-Host zeigen (CNAME am Apex ist nicht erlaubt),
-und Strato kann kein CNAME-Flattening. Cloudflare kann es — aber nur, wenn die
-Domain auch dort in der DNS-Verwaltung liegt.
+README, `tests.html` und die Skripte bleiben außen vor.
 
-Stand heute liegt die Domain vollständig bei Strato:
+### Warum der Unterordner
 
-- Nameserver: `docks04.rzone.de`, `shades03.rzone.de`
-- Apex `A` → `217.160.0.99`, `AAAA` → `2001:8d8:100f:f000::200`
-  (Strato-Parkseite „Domain reserved", kein gültiges TLS-Zertifikat)
-- `www` → CNAME auf den Apex
-
-Es liegt also **kein produktiver Inhalt** auf der Domain, den der Rechner
-verdrängen würde.
-
-### ⚠️ Diese Einträge beim Umzug übernehmen — sonst bricht die E-Mail
-
-Cloudflare importiert beim Hinzufügen der Domain die vorhandenen Einträge
-automatisch. Vor dem Nameserver-Wechsel bei Strato trotzdem prüfen, dass beide
-Zeilen in Cloudflare stehen:
-
-| Typ | Name | Wert |
-|---|---|---|
-| `MX` | `immocousins.de` | `smtpin.rzone.de` (Priorität 5) |
-| `TXT` | `_dmarc.immocousins.de` | `v=DMARC1;p=reject;` |
-
-Die alten `A`/`AAAA`-Einträge des Apex dürfen weg — die ersetzt Pages beim
-Verbinden der Custom Domain.
-
-Randnotiz: Es gibt keinen SPF-Eintrag, aber DMARC steht auf `p=reject`. Das ist
-schon heute so und unabhängig von diesem Umzug, kann aber dazu führen, dass
-legitime Mails abgelehnt werden. Einmal separat anschauen.
-
-### Ablauf
-
-1. Cloudflare-Account anlegen, *Add a site* → `immocousins.de`, Free-Plan.
-2. Importierte DNS-Einträge gegen die Tabelle oben prüfen.
-3. Bei Strato die Nameserver auf die beiden von Cloudflare genannten umstellen.
-   Aktivierung dauert meist Minuten, laut Cloudflare bis zu 24 Stunden.
-4. `./deploy.sh`, dann `dist/` unter *Workers & Pages → Create → Pages →
-   Upload assets* hochladen.
-5. Im Pages-Projekt unter *Custom domains* sowohl `immocousins.de` als auch
-   `www.immocousins.de` hinzufügen. HTTPS stellt Cloudflare selbst aus.
-
-6. Danach prüfen:
-
-   ```bash
-   ./check-live.sh
-   ```
-
-   Das Skript kontrolliert Nameserver, **MX und DMARC** (also ob die E-Mail den
-   Umzug überlebt hat), TLS, alle Security-Header, den `tests.html`-Redirect und
-   ob wirklich die aktuelle Version mit dem Termin-Link ausgeliefert wird.
-   Solange der Umzug nicht durch ist, meldet es erwartungsgemäß Fehler.
-
-Für spätere Updates: `./deploy.sh` und `dist/` erneut hochladen.
-
-### Was ich nicht übernehmen kann
-
-Der Cloudflare-Account und die Nameserver-Umstellung bei Strato brauchen eure
-Zugangsdaten — Logins und Passwörter gebe ich grundsätzlich nicht ein. Auf diesem
-Rechner sind auch keine Cloudflare-Credentials hinterlegt (kein API-Token, keine
-Wrangler-Anmeldung), sonst hätte ich den Upload selbst gefahren. Alles andere ist
-vorbereitet: `dist/` ist fertig, `check-live.sh` prüft das Ergebnis.
+Der Rechner liegt unter `/cashflowrechner/`, damit `immocousins.de/` für eine
+spätere Hauptseite frei bleibt. Wichtig dabei: Die Bildreferenz in `index.html`
+ist **relativ** (`immo-cousins-hero.png`), damit die Datei auch per Doppelklick
+offline funktioniert. Deshalb leitet `_redirects` `/cashflowrechner` per 301 auf
+`/cashflowrechner/` **mit** Schrägstrich um — ohne ihn würde der Browser das Bild
+in der Domainwurzel suchen.
 
 ### Was `_headers` und `_redirects` setzen
 
-- `tests.html` → 301 auf `/`
-- `Cache-Control: immutable` fürs Hero-Bild, `must-revalidate` für `index.html`
-- `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
-  `Permissions-Policy` und eine Content-Security-Policy
+| Regel | Wirkung |
+|---|---|
+| `/` → `/cashflowrechner/` | 302, temporär |
+| `/cashflowrechner` → `/cashflowrechner/` | 301, schützt die relativen Pfade |
+| `/tests.html` → `/cashflowrechner/` | 301 |
+| `Cache-Control` | Bild `immutable`, `index.html` `must-revalidate` |
+| Security-Header | CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` |
 
-Beide Dateien werden von Pages als Konfiguration gelesen und nicht ausgeliefert.
-Die CSP wurde gegen die laufende Seite getestet: kein Verstoß, alles funktioniert.
-Sie erlaubt `'unsafe-inline'` für Style und Skript — unvermeidlich bei der Vorgabe
-„eine einzige `index.html`" — verbietet aber jede externe Ressource
-(`connect-src 'none'`, `object-src 'none'`).
+Die CSP erlaubt `'unsafe-inline'` für Style und Skript — unvermeidlich bei der
+Vorgabe „eine einzige `index.html`" — verbietet aber jede externe Ressource.
+`connect-src` steht auf `'self'`: Die Seite selbst ruft nichts ab, mit `'none'`
+scheiterte jedoch das Auslesen der `robots.txt` durch Crawler-Werkzeuge.
 
-**Alternativen:** Netlify funktioniert identisch (dort heißt die Konfiguration
-`netlify.toml`); der Apex ginge dann ebenfalls nur mit Netlify-DNS. Offline
-funktioniert `index.html` weiterhin per Doppelklick.
+### DNS
+
+Die Domain liegt bei Strato (Registrar), die Nameserver zeigen auf Cloudflare
+(`christian` / `penny.ns.cloudflare.com`). Der Apex ist ein CNAME auf
+`immocousins-rechner.pages.dev` (CNAME-Flattening).
+
+**Die E-Mail blieb dabei vollständig bei Strato** und ist nach dem Umzug geprüft:
+
+| Typ | Name | Wert |
+|---|---|---|
+| `MX` | `immocousins.de`, `*` | `smtpin.rzone.de` (Prio 5) |
+| `TXT` | `_dmarc` | `v=DMARC1;p=reject;` |
+| `TXT` | `_domainkey` | `o=~; t=y; r=dkim@rzone.de` |
+| `SRV` | `_autodiscover._tcp` | `autoconfigure.strato.de` |
+| `CNAME` | `autoconfig` | `autoconfigure.strato.de`, **DNS only** |
+
+`autoconfig` wurde bewusst aus dem Cloudflare-Proxy genommen — Mail-Einträge
+gehören laut Cloudflare nicht durch den Proxy.
+
+### Nach jedem Deploy prüfen
+
+```bash
+./check-live.sh
+```
+
+18 Prüfungen: Nameserver, MX und DMARC, TLS, alle Security-Header, Redirects,
+Termin-Link, Impressum, Rechenlogik, Hero-Bild, 404-Verhalten.
+
+## Startseite, Tor und Leads
+
+`immocousins.de/` ist eine eigene Landingpage (`startseite.html`, wird als
+`index.html` in die Wurzel deployt): Hero, Leistungen, Rechner-Verweis,
+Instagram und Kontaktformular.
+
+### Zwei Wege zum Rechner
+
+| Adresse | Verhalten | Wofür |
+|---|---|---|
+| `immocousins.de/cashflowrechner/` | **offen**, kein Formular | der Link, den ihr teilt |
+| `immocousins.de/rechner` | 302 auf dieselbe Seite | kurze Zweitadresse |
+| `immocousins.de/cashflowrechner/?start=1` | **Tor**: Vor-/Nachname, E-Mail, Telefon, Einwilligung | so verlinken alle drei Buttons der Startseite |
+
+Nach dem Absenden verschwindet `?start=1` aus der Adresszeile und die
+Freischaltung liegt im **sessionStorage** — sie gilt nur für die laufende
+Sitzung und braucht deshalb keine Einwilligung nach § 25 TDDDG.
+
+**Was das bedeutet:** Abgefragt wird nur, wer über die Startseite kommt. Wer die
+Adresse `/cashflowrechner/` kennt — aus Instagram, aus Google, aus einer
+Weiterleitung — kommt ohne Formular hinein. Das ist so gewollt; der geteilte
+Link soll ohne Hürde funktionieren. Zum Vergleich: Ein Tor auf der offenen
+Adresse würde mehr Leads bringen, dafür aber jeden geteilten Link mit einem
+Formular belasten.
+
+Ohnehin gilt: Das Tor ist clientseitig. Wer JavaScript abschaltet, sieht den
+Rechner direkt. Als Lead-Magnet ist das üblich, als Zugriffsschutz taugt es
+nicht.
+
+### Wo die Leads landen
+
+Beide Formulare schicken an die Pages Function `functions/api/lead.js`, die in
+die D1-Datenbank `immocousins-leads` schreibt (Region **EEUR**, also EU).
+Gespeichert wird nur, was der Nutzer eingibt — **keine IP, kein User-Agent,
+keine Cookies**. Ein unsichtbares Honeypot-Feld fängt Bots ab.
+
+```bash
+./leads.sh          # letzte 50 Leads als Tabelle
+./leads.sh csv      # alles nach leads.csv (Excel-tauglich, mit BOM)
+./leads.sh anzahl   # nur die Anzahl
+```
+
+### E-Mail-Benachrichtigung (aktiv)
+
+Jeder Lead löst sofort eine Mail an `verwaltung@heimkauf.de` aus — Name,
+E-Mail, Telefon, Quelle, Zeit und ggf. Nachricht. Als Antwortadresse steht die
+Adresse des Interessenten drin, ein „Antworten" geht also direkt an ihn.
+
+Versand über **Resend**, Region Irland (eu-west-1). Absenderdomain
+`immocousins.de` ist dort verifiziert.
+
+**Diese drei DNS-Einträge tragen den Versand** (Cloudflare, `immocousins.de`):
+
+| Typ | Name | Wert | Proxy |
+|---|---|---|---|
+| TXT | `resend._domainkey` | DKIM-Schlüssel (218 Zeichen) | — |
+| CNAME | `rsend` | `rsend-euw1.forge.rmta.net` | DNS only |
+| CNAME | `send` | `send.forge.rmta.net` | DNS only |
+
+**Zwei Dinge wurden bewusst nicht gemacht:**
+
+1. Resends „Auto configure" hätte Resend Schreibzugriff auf die Cloudflare-DNS-Zone
+   gegeben — in derselben Zone liegen die Strato-MX-Einträge. Stattdessen manuell
+   eingetragen.
+2. Resend wollte unter „Enable Receiving" einen MX auf die Root-Domain setzen
+   (`@` → `inbound-smtp.eu-west-1.amazonaws.com`, **Priorität 4**). Stratos MX hat
+   Priorität 5 — der Amazon-Eintrag hätte die eingehende Post abgefangen. **Nicht
+   eingetragen**, es wird nur gesendet, nicht empfangen. Wer Resend später auch
+   zum Empfangen nutzen will, muss vorher die Postfächer migrieren.
+
+Auch Click- und Open-Tracking sind in Resend abgeschaltet; sie waren
+standardmäßig aktiv und hätten Links in den Mails umgeschrieben.
+
+**Konfiguration im Pages-Projekt** (Settings → Variables and Secrets):
+
+| Name | Typ | Zweck |
+|---|---|---|
+| `RESEND_API_KEY` | Secret | Versandzugang |
+| `MAIL_VON` | Variable | Absender, Standard `immo.cousins <lead@immocousins.de>` |
+| `MAIL_AN` | Variable | Empfänger, Standard `verwaltung@heimkauf.de` |
+
+`MAIL_VON` und `MAIL_AN` haben Vorgabewerte im Code — fehlen sie, funktioniert
+der Versand trotzdem. Fehlt `RESEND_API_KEY`, wird der Lead weiterhin in D1
+gespeichert, nur ohne Benachrichtigung. Der Versand läuft in `waitUntil` und kann
+die Anfrage nie scheitern lassen.
+
+**Nach Änderungen an den Variablen muss einmal neu deployt werden**, sonst
+arbeitet die Funktion mit dem alten Stand.
 
 ## Teilbare Vorschau
 
@@ -149,12 +254,12 @@ lokalen Server:
 
 | Kategorie | Score |
 |---|---|
-| Performance | 99 |
+| Performance | 100 |
 | Accessibility | 100 |
 | Best Practices | 100 |
 | SEO | 100 |
 
-FCP 1,2 s · LCP 1,8 s · TBT 0 ms · CLS 0,001.
+FCP 1,1 s · LCP 1,1 s · TBT 0 ms · CLS 0,001. Der LCP-Sprung von 1,8 s auf 1,1 s kam durch das WebP-Hero (11 KB statt 153 KB).
 
 Nachstellen:
 
@@ -170,7 +275,6 @@ Die verbleibenden Abzüge sind nicht Seitencode:
 - **cache-insight / document-latency-insight** — fehlende `Cache-Control`- und
   Kompressions-Header von `python3 -m http.server`. Auf Netlify/Vercel erledigt
   sich das von selbst.
-- **image-delivery-insight** — verlangt WebP für das Hero-Bild, siehe „Offene Punkte".
 
 ## Barrierefreiheit: Abweichungen von der Excel-Palette
 
@@ -264,77 +368,55 @@ Soll sie ganz weg, reicht es, das `<p class="reset-zeile">` zu entfernen.
 - Die Feldreihenfolge in der Konstanten `SER` (im UI-Block) bestimmt das Link-Format
   — **nicht umsortieren**, sonst brechen bereits geteilte Links.
 
+## Rechtstexte
+
+`immocousins.de/datenschutz/` ist eine **eigene** Datenschutzerklärung für diese
+Website (`datenschutz.html`). Die auf heimkauf.de deckte weder Cloudflare als
+Hoster noch die Lead-Speicherung noch Resend ab. Sie beschreibt konkret:
+
+- Cloudflare als Hoster, Server-Logs, Standardvertragsklauseln
+- die beiden Formulare: welche Felder, Pflicht oder freiwillig, Zweck,
+  Rechtsgrundlage (Art. 6 Abs. 1 lit. b bzw. f DSGVO), Speicherort EU
+- Resend als Auftragsverarbeiter für die Benachrichtigungen
+- `localStorage` nur mit Einwilligung (§ 25 Abs. 1 TDDDG), `sessionStorage`
+  für die Tor-Freischaltung als unbedingt erforderlich (§ 25 Abs. 2 Nr. 2)
+- dass Calendly und Instagram reine Links sind, keine Einbettungen
+- Betroffenenrechte, Aufsichtsbehörde (LDI NRW), Speicherdauer
+
+Das **Impressum** verlinkt weiter auf heimkauf.de — dort steht die vollständige
+Firmierung samt der gesetzlich vorgeschriebenen E-Mail-Adresse. Eine eigene
+Impressumsseite wurde bewusst nicht angelegt: § 5 DDG verlangt eine erreichbare
+E-Mail-Adresse, und `info@heimkauf.de` sollte auf immocousins.de nicht sichtbar
+sein. Die Datenschutzerklärung verweist für Kontaktdaten deshalb aufs Impressum.
+
+> **Der Text ist von mir verfasst, nicht von einem Anwalt.** Er beschreibt die
+> tatsächliche Verarbeitung korrekt und vollständig — die rechtliche Würdigung
+> gehört trotzdem einmal gegengelesen. Zusätzlich nötig: der
+> Auftragsverarbeitungsvertrag mit Resend (in deren Einstellungen abrufbar).
+
+## E-Mail-Absicherung
+
+| Eintrag | Wert | Zweck |
+|---|---|---|
+| `TXT @` | `v=spf1 include:_spf.strato.com ~all` | erlaubt Stratos Mailserver, alles andere Softfail |
+| `TXT _dmarc` | `v=DMARC1;p=reject;` | war bereits vorhanden |
+| `TXT resend._domainkey` | DKIM | signiert die Lead-Benachrichtigungen |
+
+Vorher gab es **keinen SPF-Eintrag** bei gleichzeitig strengem DMARC — Cloudflare
+hatte das angemahnt. `~all` statt `-all` gewählt, damit ein übersehener
+Versandweg nicht hart abgelehnt, sondern nur markiert wird.
+
+Nach dem Setzen gegengeprüft: Resend stellt weiterhin zu (DKIM-Alignment trägt
+die DMARC-Prüfung), MX und DMARC unverändert.
+
+Wird künftig aus `immocousins.de` über Microsoft 365 versendet — heimkauf.de
+nutzt das —, muss `include:spf.protection.outlook.com` ergänzt werden.
+
 ## Offene Punkte
 
-- **WebP fehlt.** Auf diesem Rechner war kein WebP-Encoder installiert
-  (`sips` kann kein WebP schreiben, `cwebp`/ImageMagick nicht vorhanden), deshalb
-  liegt nur das PNG bei (153 KB). WebP nachrüsten:
-
-  ```bash
-  brew install webp && cwebp -q 80 immo-cousins-hero.png -o immo-cousins-hero.webp
-  ```
-
-  Danach im Hero das `<img>` durch `<picture>` ersetzen:
-
-  ```html
-  <picture>
-    <source srcset="immo-cousins-hero.webp" type="image/webp">
-    <img src="immo-cousins-hero.png" width="140" height="140"
-         alt="Die immo.cousins – zwei Immobilien-Investoren aus Köln">
-  </picture>
-  ```
-
-  Das `<source>` erst einbauen, wenn die WebP-Datei wirklich existiert — ein
-  fehlendes `<source>`-Ziel fällt nicht auf das `<img>` zurück, sondern bricht.
-- **Rechtstexte gehören auf die neue Domain angepasst.** Der Footer verlinkt auf
-  `heimkauf.de/impressum/` (Heimkauf CGN GmbH, Geschäftsführer Navid Chenari,
-  HRB 122712) und `heimkauf.de/privacy-policy/` — beide erreichbar und geprüft.
-  Mit dem Umzug auf `immocousins.de` kommen drei Punkte dazu:
-  1. Das Impressum gilt für das Angebot auf heimkauf.de. Betreibt dieselbe GmbH
-     auch immocousins.de, genügt der Verweis grundsätzlich — sauberer ist es,
-     immocousins.de im Impressum ausdrücklich mit aufzuführen.
-  2. Die Datenschutzerklärung nennt weder **Cloudflare als Hoster** dieser Seite
-     (Server-Logs, Drittlandtransfer) noch die Opt-in-Speicherung im
-     localStorage (§ 25 TDDDG). Beides gehört ergänzt.
-  3. Das Impressum firmiert als „Heimkauf CGN GmbH", die Datenschutzerklärung
-     nennt in der Verantwortlichen-Zeile „HEIMKAUF GmbH" — einmal angleichen.
-
-  Der Rechner selbst ist unkritisch: kein Backend, kein Tracking, keine Cookies,
-  Speicherung nur per Opt-in. Extern sind nur die Navigationslinks zu Calendly
-  und Instagram. Trotzdem einmal anwaltlich gegenlesen lassen.
-
-- **WebP fehlt.** Auf diesem Rechner war kein WebP-Encoder installiert
-  (`sips` kann kein WebP schreiben, `cwebp`/ImageMagick nicht vorhanden), deshalb
-  liegt nur das PNG bei (153 KB). WebP nachrüsten:
-
-  ```bash
-  brew install webp && cwebp -q 80 immo-cousins-hero.png -o immo-cousins-hero.webp
-  ```
-
-  Danach im Hero das `<img>` durch `<picture>` ersetzen:
-
-  ```html
-  <picture>
-    <source srcset="immo-cousins-hero.webp" type="image/webp">
-    <img src="immo-cousins-hero.png" width="140" height="140"
-         alt="Die immo.cousins – zwei Immobilien-Investoren aus Köln">
-  </picture>
-  ```
-
-  Das `<source>` erst einbauen, wenn die WebP-Datei wirklich existiert — ein
-  fehlendes `<source>`-Ziel fällt nicht auf das `<img>` zurück, sondern bricht.
-- **Datenschutzerklärung deckt diese Seite noch nicht ab.** Der Footer verlinkt
-  jetzt auf `heimkauf.de/impressum/` (Heimkauf CGN GmbH, Geschäftsführer
-  Navid Chenari) und `heimkauf.de/privacy-policy/` — beide erreichbar, beide
-  geprüft. Zwei Punkte bleiben:
-  1. Die Datenschutzerklärung ist für heimkauf.de geschrieben und nennt weder den
-     Hoster dieser Seite noch die Opt-in-Speicherung im localStorage. Sobald der
-     Rechner unter einer eigenen Domain bzw. bei einem anderen Hoster liegt,
-     gehört beides ergänzt (Server-Logs des Hosters, § 25 TDDDG / Einwilligung).
-  2. Das Impressum firmiert als „Heimkauf CGN GmbH", die Datenschutzerklärung
-     nennt in der Verantwortlichen-Zeile „HEIMKAUF GmbH" — auf der bestehenden
-     Seite uneinheitlich, einmal angleichen.
-
-  Der Rechner selbst ist unkritisch: kein Backend, kein Tracking, keine Cookies,
-  Speicherung nur per Opt-in; extern ist nur der Instagram-Link im CTA.
-  Trotzdem einmal anwaltlich gegenlesen lassen.
+- **Datenschutzerklärung anwaltlich gegenlesen lassen** und den
+  Auftragsverarbeitungsvertrag mit Resend abschließen (Resend → Settings).
+- **Impressum ergänzen:** Auf heimkauf.de ist immocousins.de nicht aufgeführt.
+  Sauberer wäre, die Domain dort mit aufzunehmen. Außerdem firmiert das
+  Impressum als „Heimkauf CGN GmbH", die dortige Datenschutzerklärung nennt
+  „HEIMKAUF GmbH" — einmal angleichen.

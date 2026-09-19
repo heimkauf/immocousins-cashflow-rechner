@@ -1,2 +1,8 @@
-# Die Testseite gehört nicht auf die Produktivdomain
-/tests.html   /   301
+# Kurze Zweitadresse fuer denselben offenen Rechner
+/rechner          /cashflowrechner/   302
+
+# Ohne Schrägstrich sonst brechen die relativen Pfade (Hero-Bild)
+/cashflowrechner  /cashflowrechner/   301
+
+# Testseite gehoert nicht auf die Produktivdomain
+/tests.html       /cashflowrechner/   301

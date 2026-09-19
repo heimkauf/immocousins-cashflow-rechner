@@ -3,7 +3,10 @@
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'none'
+
+/
+  Cache-Control: public, max-age=0, must-revalidate
 
 /index.html
   Cache-Control: public, max-age=0, must-revalidate
@@ -12,4 +15,19 @@
   Cache-Control: public, max-age=31536000, immutable
 
 /immo-cousins-hero.webp
+  Cache-Control: public, max-age=31536000, immutable
+
+/cashflowrechner/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/cashflowrechner/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/cashflowrechner/immo-cousins-hero.png
+  Cache-Control: public, max-age=31536000, immutable
+
+/cashflowrechner/immo-cousins-hero.webp
+  Cache-Control: public, max-age=31536000, immutable
+
+/cashflowrechner/video/*
   Cache-Control: public, max-age=31536000, immutable
