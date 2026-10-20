@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Testseite gehoert nicht in den Index (wird zusaetzlich per 301 umgeleitet)
+Disallow: /tests.html
+
+# Schnittstellen sind keine Seiten
+Disallow: /api/
+
+Sitemap: https://immocousins.de/sitemap.xml

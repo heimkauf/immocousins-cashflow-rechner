@@ -1,6 +1,17 @@
 # Kurze Zweitadresse fuer denselben offenen Rechner
 /rechner          /cashflowrechner/   302
 
+# Verkäufer-Seiten: eine kanonische Adresse mit Schrägstrich
+/immobilie-verkaufen-koeln   /immobilie-verkaufen-koeln/   301
+/hausbewertung-koeln         /hausbewertung-koeln/         301
+/mehrfamilienhaus-verkaufen-koeln   /mehrfamilienhaus-verkaufen-koeln/   301
+/erbimmobilie-verkaufen-koeln       /erbimmobilie-verkaufen-koeln/       301
+/wohnung-verkaufen-koeln     /wohnung-verkaufen-koeln/     301
+/tippgeber                   /tippgeber/                   301
+/impressum                   /impressum/                   301
+/verkaufen                   /immobilie-verkaufen-koeln/   302
+/bewertung                   /hausbewertung-koeln/         302
+
 # Ohne Schrägstrich sonst brechen die relativen Pfade (Hero-Bild)
 /cashflowrechner  /cashflowrechner/   301
 

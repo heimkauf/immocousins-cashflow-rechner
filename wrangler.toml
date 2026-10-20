@@ -8,8 +8,16 @@ binding = "DB"
 database_name = "immocousins-leads"
 database_id = "5109a26d-c35b-4205-9e87-fe26523a7daf"
 
-# Fuer die E-Mail-Benachrichtigung zusaetzlich im Pages-Projekt hinterlegen
-# (Settings -> Variables and Secrets), damit der Schluessel nicht im Repo landet:
-#   RESEND_API_KEY   verschluesselt
-#   MAIL_VON         z. B. "immo.cousins <lead@immocousins.de>"
-#   MAIL_AN          verwaltung@heimkauf.de
+# Geheimnisse nur im Pages-Projekt hinterlegen (Settings -> Variables and Secrets),
+# nie in dieser Datei. Das Repo ist öffentlich.
+#   RESEND_API_KEY       verschlüsselt, Versand
+#   MAIL_VON             z. B. "immo.cousins <lead@immocousins.de>"
+#   MAIL_AN              Investoren-Leads, Standard verwaltung@heimkauf.de
+#   MAIL_VERKAUF         Verkäufer-Leads, Standard chenari.immo@gmail.com
+#   ASANA_TOKEN          verschlüsselt, nur Verkäufer-Leads
+#   ASANA_PROJECT_GID    Standard 1217792767875702
+#   ASANA_SECTION_GID    Standard 1217792888034081
+#   GEOCODER_URL         eigene Photon-Instanz, produktiv empfohlen
+#   GEOCODER_PROVIDER    photon | nominatim | none
+#                        ohne URL ist nominatim die Zwischenlösung, ein Aufruf
+#                        pro Adresse, kein Autocomplete

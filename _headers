@@ -31,3 +31,30 @@
 
 /cashflowrechner/video/*
   Cache-Control: public, max-age=31536000, immutable
+
+/verkaufen/*
+  Cache-Control: public, max-age=86400
+
+/sitemap.xml
+  Cache-Control: public, max-age=3600
+
+/immobilie-verkaufen-koeln/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/hausbewertung-koeln/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/mehrfamilienhaus-verkaufen-koeln/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/erbimmobilie-verkaufen-koeln/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/wohnung-verkaufen-koeln/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/tippgeber/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/impressum/*
+  Cache-Control: public, max-age=0, must-revalidate
