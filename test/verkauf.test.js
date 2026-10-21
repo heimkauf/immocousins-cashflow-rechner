@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bewerten, ertragswertModell } from '../lib/bewerten.js';
+import { bewerten, ertragswertModell, istPersoenlicheEinschaetzung } from '../lib/bewerten.js';
 import { scoreLead } from '../lib/scoring.js';
 import { regionAus } from '../lib/region.js';
 import { providerWahl, normalisiereAdresse } from '../lib/geocode.js';
@@ -39,6 +39,24 @@ test('MFH Köln: Miete mal Faktor wie im Konzeptbeispiel', () => {
   assert.ok(Math.abs(r.gegenrechnung.wert - 1911749.74) < 1);
   assert.match(r.disclaimer, /§ 194 BauGB/);
   assert.equal(r.disclaimer, DISCLAIMER);
+});
+
+test('Reihenhaus und Doppelhaushälfte in Köln: keine Spanne', () => {
+  const koeln = bewerten(
+    { art: 'efh', region: 'koeln', bauform: 'reihe', wohnflaeche: 120, baujahr: 1975 },
+    { irw: { wert: 7000, wohnflaeche: 140, baujahr: 1955, layer: 'irw_ein_zweifamilienhaeuser' }, brw: BRW }
+  );
+  assert.equal(istPersoenlicheEinschaetzung({ art: 'efh', region: 'koeln', bauform: 'doppel' }), true);
+  assert.equal(koeln.variante, 'B');
+  assert.equal(koeln.spanne, null);
+  assert.equal(koeln.verfahren, 'persoenlich');
+  assert.match(koeln.hinweis, /persönlich/);
+  const rek = bewerten(
+    { art: 'efh', region: 'rhein-erft', bauform: 'doppel', wohnflaeche: 120, baujahr: 1974, zustand: 'normal' },
+    { irw: { wert: 3400, wohnflaeche: 120, baujahr: 1974, layer: 'irw_reihen_doppelhaeuser' } }
+  );
+  assert.notEqual(rek.variante, 'B');
+  assert.ok(rek.spanne.mitte > 0);
 });
 
 test('Ertragswert ohne Grundstück bleibt leer, die Faktor-Spanne bleibt', () => {

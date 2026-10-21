@@ -6,13 +6,21 @@
  * kein Tracking - nur die Felder, die der Nutzer selbst eingegeben hat.
  *
  * Optionale Umgebungsvariablen im Pages-Projekt:
- *   RESEND_API_KEY      Schluessel von resend.com (verschluesselt hinterlegen)
- *   MAIL_VON            Absender, z. B. "immo.cousins <lead@immocousins.de>"
+ *   SMTP_HOST           Standard smtp.strato.de
+ *   SMTP_PORT           Standard 465
+ *   SMTP_USER           Standard anfrage@immocousins.de
+ *   SMTP_PASS           Passwort des Strato-Postfachs, nur als Secret
+ *   SMTP_TLS            on (465) oder starttls (587)
+ *   MAIL_VERSAND        smtp | resend | aus. Ohne Angabe: smtp sobald SMTP_PASS da ist
+ *   MAIL_VON            Absender, Standard immo.cousins <anfrage@immocousins.de>
  *   MAIL_AN             Empfaenger der Investoren-Leads, Standard verwaltung@heimkauf.de
- *   MAIL_VERKAUF        Empfaenger der Verkaeufer-Leads, Standard chenari.immo@gmail.com
- *   ASANA_TOKEN         Asana-Zugriff, nur fuer Verkaeufer-Leads
- *   ASANA_PROJECT_GID   Standard 1217792767875702
- *   ASANA_SECTION_GID   Standard 1217792888034081
+ *   MAIL_VERKAUF        Empfaenger der Verkaeufer- und Tippgeber-Leads, Standard chenari.immo@gmail.com
+ *   RESEND_API_KEY      nur wenn MAIL_VERSAND=resend
+ *   ASANA_TOKEN         Asana-Zugriff, nur fuer Verkaeufer- und Tippgeber-Leads
+ *   ASANA_PROJECT_GID   Standard 1217792767875702 (Ankauf Projekte)
+ *   ASANA_SECTION_GID   Standard 1217792888034081 (Eingang)
+ *   UPLOAD_AKTIV        1 schaltet den Unterlagen-Upload ein
+ *   UPLOAD_LOESCH_TAGE  Standard 90
  * Fehlt ein Schluessel, wird der Lead trotzdem gespeichert.
  */
 
@@ -24,8 +32,23 @@ import { bewerten, brwFuerArt } from '../../lib/bewerten.js';
 import { legeAsanaAn } from '../../lib/asana.js';
 import { euro } from '../../lib/zahl.js';
 import { DISCLAIMER } from '../../lib/texte.js';
+import { sendeInvestor, sendeVerkauf } from '../../lib/mail.js';
+import { raeumeAbgelaufene } from '../../lib/unterlagen.js';
 
 const MAX = { name: 100, email: 254, telefon: 40, nachricht: 4000 };
+
+/**
+ * Cloudflare waitUntil gibt nichts zurück, die Antwort wartet dann nicht auf die Mail.
+ * Liefert waitUntil ein Thenable (lokale Vorschau, Tests), wird es abgewartet.
+ */
+async function nebenherLassen(waitUntil, arbeit) {
+  if (typeof waitUntil === 'function') {
+    const warte = waitUntil(arbeit);
+    if (warte && typeof warte.then === 'function') await warte;
+    return;
+  }
+  await arbeit;
+}
 
 function saubern(wert, grenze) {
   if (typeof wert !== 'string') return '';
@@ -41,87 +64,6 @@ function saubern(wert, grenze) {
 
 function mailPlausibel(wert) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(wert);
-}
-
-/* Benachrichtigung verschicken. Schlaegt das fehl, ist der Lead trotzdem
-   gespeichert - der Nutzer darf davon nichts merken. */
-async function benachrichtigen(env, lead) {
-  if (!env.RESEND_API_KEY) return { versandt: false, grund: 'kein Schluessel' };
-
-  const von = env.MAIL_VON || 'immo.cousins <lead@immocousins.de>';
-  const an = env.MAIL_AN || 'verwaltung@heimkauf.de';
-  const quelle = lead.quelle === 'rechner' ? 'Cashflow-Rechner' : 'Kontaktformular';
-
-  const zeilen = [
-    'Neuer Lead ueber immocousins.de',
-    '',
-    'Quelle:   ' + quelle,
-    'Name:     ' + lead.vorname + ' ' + lead.nachname,
-    'E-Mail:   ' + lead.email,
-    'Telefon:  ' + (lead.telefon || '-'),
-    'Zeit:     ' + lead.erstellt,
-  ];
-  if (lead.nachricht) zeilen.push('', 'Nachricht:', lead.nachricht);
-
-  try {
-    const antwort = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        authorization: 'Bearer ' + env.RESEND_API_KEY,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: von,
-        to: [an],
-        reply_to: lead.email,
-        subject: 'Neuer Lead: ' + lead.vorname + ' ' + lead.nachname + ' (' + quelle + ')',
-        text: zeilen.join('\n'),
-      }),
-    });
-    return { versandt: antwort.ok, grund: antwort.ok ? '' : 'HTTP ' + antwort.status };
-  } catch (e) {
-    return { versandt: false, grund: 'Netzwerkfehler' };
-  }
-}
-
-async function benachrichtigenVerkauf(env, lead) {
-  if (!env.RESEND_API_KEY) return { versandt: false, grund: 'kein Schluessel' };
-  const von = env.MAIL_VON || 'immo.cousins <lead@immocousins.de>';
-  const an = env.MAIL_VERKAUF || 'chenari.immo@gmail.com';
-  const ort = [lead.plz, lead.ort].filter(Boolean).join(' ');
-  const zeilen = [
-    'Neuer Verkaeufer-Lead ueber immocousins.de',
-    '',
-    'Score:    ' + lead.score + (lead.gruende && lead.gruende.length ? ' (' + lead.gruende.join(', ') + ')' : ''),
-    'Weg:      ' + (lead.weg || '-'),
-    'Name:     ' + lead.vorname,
-    'E-Mail:   ' + lead.email,
-    'Telefon:  ' + (lead.telefon || '-'),
-    'Adresse:  ' + [lead.strasse, lead.hausnummer, ort].filter(Boolean).join(' '),
-    'Art:      ' + (lead.art || '-'),
-    'Zeit:     ' + lead.erstellt,
-    '',
-    lead.kurz || '',
-  ];
-  try {
-    const antwort = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        authorization: 'Bearer ' + env.RESEND_API_KEY,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: von,
-        to: [an],
-        reply_to: lead.email,
-        subject: '[' + lead.score + '] Verkaufslead: ' + lead.vorname + (ort ? ', ' + ort : ''),
-        text: zeilen.join('\n'),
-      }),
-    });
-    return { versandt: antwort.ok, grund: antwort.ok ? '' : 'HTTP ' + antwort.status };
-  } catch (e) {
-    return { versandt: false, grund: 'Netzwerkfehler' };
-  }
 }
 
 function fasseZusammen(lead, bewertung, gegen) {
@@ -228,6 +170,7 @@ async function verkaufsLead(context, daten) {
   }
 
   const fuerDraussen = {
+    quelle: lead.quelle,
     score: wertung.score,
     gruende: wertung.gruende,
     qualifizierung: wertung.qualifizierung,
@@ -250,14 +193,23 @@ async function verkaufsLead(context, daten) {
     disclaimer: DISCLAIMER,
     erstellt: lead.erstellt,
     kurz: zusammen,
+    variante: objekt.variante,
+    einwilligungText: lead.einwilligungText,
+    telefonEinwilligungText: lead.telefonEinwilligungText,
+    unterlagen: lead.unterlagen,
+    modell: {
+      verfahren: modell.verfahren,
+      spanne: modell.spanne,
+      hinweis: modell.hinweis,
+    },
   };
 
   const nebenher = Promise.all([
     legeAsanaAn(env, fuerDraussen).catch(() => ({ angelegt: false })),
-    benachrichtigenVerkauf(env, fuerDraussen).catch(() => ({ versandt: false })),
+    sendeVerkauf(env, fuerDraussen).catch(() => ({ intern: { versandt: false } })),
+    raeumeAbgelaufene(env).catch(() => ({ geloescht: 0 })),
   ]);
-  if (typeof waitUntil === 'function') waitUntil(nebenher);
-  else await nebenher;
+  await nebenherLassen(waitUntil, nebenher);
 
   return json({ ok: true }, 200);
 }
@@ -327,11 +279,7 @@ export async function onRequestPost(context) {
 
   /* Der Lead ist sicher. Die Benachrichtigung laeuft nebenher weiter,
      damit der Nutzer nicht auf den Mailversand warten muss. */
-  if (typeof waitUntil === 'function') {
-    waitUntil(benachrichtigen(env, lead));
-  } else {
-    await benachrichtigen(env, lead);
-  }
+  await nebenherLassen(waitUntil, sendeInvestor(env, lead));
 
   return json({ ok: true }, 200);
 }
