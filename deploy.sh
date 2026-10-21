@@ -37,8 +37,10 @@ for d in immobilie-verkaufen-koeln hausbewertung-koeln mehrfamilienhaus-verkaufe
   mkdir -p "dist/$d"
   cp "$d/index.html" "dist/$d/index.html"
 done
-mkdir -p dist/verkaufen
+mkdir -p dist/verkaufen/fonts dist/verkaufen/bilder
 cp verkaufen/basis.css verkaufen/funnel.js verkaufen/tipp.js dist/verkaufen/
+cp verkaufen/fonts/*.woff2 dist/verkaufen/fonts/
+cp verkaufen/bilder/*.webp dist/verkaufen/bilder/
 
 echo "dist/ bereit:"
 find dist -type f | sed 's|^dist/|  |' | sort

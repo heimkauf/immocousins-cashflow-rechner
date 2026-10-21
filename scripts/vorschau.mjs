@@ -26,6 +26,7 @@ const typen = {
   '.png': 'image/png',
   '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
+  '.woff2': 'font/woff2',
   '.mp4': 'video/mp4',
 };
 
