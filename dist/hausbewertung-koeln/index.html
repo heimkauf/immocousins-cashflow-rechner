@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<meta name="theme-color" content="#0F5C55">
+<meta name="theme-color" content="#F5FAFF">
 <meta name="description" content="Bodenrichtwert sofort, danach eine grobe Preisspanne für Wohnung, Haus, Mehrfamilienhaus oder Grundstück in Köln. Keine Wertermittlung nach § 194 BauGB.">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://immocousins.de/hausbewertung-koeln/">
@@ -15,7 +15,8 @@
 <meta property="og:locale" content="de_DE">
 <meta property="og:image" content="https://immocousins.de/immo-cousins-hero.png">
 <title>Hausbewertung Köln – grobe Preisspanne | immo.cousins</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230F5C55'/><text x='16' y='23' text-anchor='middle' font-family='system-ui,sans-serif' font-size='19' font-weight='700' fill='%23E8B84B'>&#8364;</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231E2A5E'/><text x='16' y='22' text-anchor='middle' font-family='system-ui,sans-serif' font-size='16' font-weight='700' fill='%234DA9FF'>&#8364;</text></svg>">
+<script>document.documentElement.classList.add('js')</script>
 <link rel="preload" href="/verkaufen/fonts/plus-jakarta-700.woff2" as="font" type="font/woff2" crossorigin>
 
 <link rel="stylesheet" href="/verkaufen/basis.css">
@@ -28,16 +29,18 @@
 <header class="top"><div class="top-innen">
     <a class="logo" href="/immobilie-verkaufen-koeln/">immo<i>.</i>cousins</a>
     <nav class="nav-desk" aria-label="Verkaufen"><a href="/immobilie-verkaufen-koeln/">Verkaufen</a><a href="/hausbewertung-koeln/" aria-current="page">Bewertung</a><a href="/mehrfamilienhaus-verkaufen-koeln/">Mehrfamilienhaus</a><a href="/erbimmobilie-verkaufen-koeln/">Erbe</a><a href="/tippgeber/">Tippgeber</a></nav>
-    <a class="btn btn-ghost nav-cta" href="/">Für Anleger</a>
+    <a class="btn btn-weiss nav-cta" href="/">Für Anleger</a>
     <details class="menue">
       <summary><span class="sr">Menü</span><i></i></summary>
       <div class="menue-panel"><a href="/immobilie-verkaufen-koeln/">Verkaufen</a><a href="/hausbewertung-koeln/" aria-current="page">Bewertung</a><a href="/mehrfamilienhaus-verkaufen-koeln/">Mehrfamilienhaus</a><a href="/erbimmobilie-verkaufen-koeln/">Erbe</a><a href="/tippgeber/">Tippgeber</a></div>
     </details>
-  </div></header>
+  </div>
+  <div class="scroll-bar" aria-hidden="true"><span id="scrollBar"></span></div>
+</header>
 <main id="inhalt">
-<header class="werk-kopf wrap">
+<header class="werk-kopf">
   <p class="kicker">Köln · Rhein-Erft</p>
-  <h1>Was ist deine Immobilie wert?</h1>
+  <h1>Was ist deine Immobilie <span class="blau">wert?</span></h1>
   <p class="sub">Kostenlos und unverbindlich. Die Spanne kommt vor der E-Mail.</p>
   <p class="menschen"><img src="/immo-cousins-hero.webp" width="80" height="80" alt="Navid und Mir Nikan Chenari">Navid und Nikan</p>
 </header>
@@ -323,7 +326,37 @@
     </nav>
     <p class="firma">Heimkauf CGN GmbH · Pilgrimstr. 6, 50674 Köln · Navid Chenari und Mir Nikan Chenari</p>
   </div></footer>
-
+<a class="wa-schwebend js-wa" href="https://instagram.com/immo.cousins"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#22C55E" d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.7-1.2A9 9 0 1 0 12 3Zm0 1.6a7.4 7.4 0 0 1 6.4 11.2l-.2.4.4 1.6-1.6-.4-.4.2A7.4 7.4 0 1 1 12 4.6Z"/></svg><span>WhatsApp</span></a>
+<script>
+(function(){
+  var meta=document.querySelector('meta[name="ic-whatsapp"]');
+  var nr=meta&&meta.content?meta.content.replace(/\D/g,''):'';
+  var href=nr?('https://wa.me/'+nr+'?text='+encodeURIComponent('Hallo, ich möchte eine Immobilie in Köln bewerten lassen.')):'https://instagram.com/immo.cousins';
+  document.querySelectorAll('.js-wa').forEach(function(a){
+    a.href=href;
+    if(!nr) a.title='WhatsApp-Nummer folgt. Bis dahin Instagram.';
+  });
+  var balken=document.getElementById('scrollBar');
+  function tick(){
+    if(!balken) return;
+    var doc=document.documentElement;
+    var max=doc.scrollHeight-doc.clientHeight;
+    balken.style.width=(max>0?(doc.scrollTop/max)*100:0)+'%';
+  }
+  addEventListener('scroll',tick,{passive:true});
+  tick();
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(!entry.isIntersecting) return;
+        entry.target.classList.add('sichtbar');
+        io.unobserve(entry.target);
+      });
+    },{threshold:0.16,rootMargin:'0px 0px -8% 0px'});
+    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  }
+})();
+</script>
 <script src="/verkaufen/funnel.js"></script>
 </body>
 </html>

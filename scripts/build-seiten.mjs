@@ -17,10 +17,27 @@ const NAV = [
   ['/tippgeber/', 'Tippgeber'],
 ];
 
-const HERO = `<div class="buehne-media">
-    <img src="/verkaufen/bilder/hero-800.webp" srcset="/verkaufen/bilder/hero-800.webp 800w, /verkaufen/bilder/hero-1600.webp 1600w" sizes="(min-width: 900px) 48vw, 100vw" width="1600" height="1067" alt="Begrünte Wohnstraße mit Altbauten" fetchpriority="high" decoding="async">
+const HERO = `<figure class="hero-bild">
+    <img src="/verkaufen/bilder/hero-800.webp" srcset="/verkaufen/bilder/hero-800.webp 800w, /verkaufen/bilder/hero-1600.webp 1600w" sizes="(min-width: 900px) 920px, 100vw" width="1600" height="1067" alt="Begrünte Wohnstraße mit Altbauten" fetchpriority="high" decoding="async">
     <p class="credit">Foto: <a href="https://unsplash.com/license" rel="noopener">Unsplash-Lizenz</a></p>
+  </figure>`;
+
+const WA_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#22C55E" d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.7-1.2A9 9 0 1 0 12 3Zm0 1.6a7.4 7.4 0 0 1 6.4 11.2l-.2.4.4 1.6-1.6-.4-.4.2A7.4 7.4 0 1 1 12 4.6Z"/></svg>';
+
+const SHIELD = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3 20 6.2V12c0 4.2-3 6.8-8 8.2C7 18.8 4 16.2 4 12V6.2L12 3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+
+function laufband() {
+  const orte = ['Köln', 'Frechen', 'Hürth', 'Pulheim', 'Brühl', 'Kerpen', 'Erftstadt', 'Wesseling', 'Bergheim', 'Bedburg'];
+  const teile = orte.map((ort) => `<span>${ort}</span><i></i>`).join('');
+  return `<div class="laufband" aria-hidden="true"><div class="laufband-spur">${teile}${teile}</div></div>`;
+}
+
+function ctaPaar(href) {
+  return `<div class="cta-paar">
+    <a class="btn btn-blau" href="${href}">Jetzt kostenlos bewerten</a>
+    <a class="btn btn-weiss js-wa" href="https://instagram.com/immo.cousins">${WA_ICON} Direkt per WhatsApp</a>
   </div>`;
+}
 
 function ico(inner) {
   return `<span class="ico" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">${inner}</svg></span>`;
@@ -29,6 +46,8 @@ const SVG = {
   pin: '<path d="M16 28s8-7.5 8-14a8 8 0 1 0-16 0c0 6.5 8 14 8 14Z"/><circle cx="16" cy="14" r="2.2"/>',
   chart: '<path d="M6 26h20"/><path d="M10 26V16M16 26V8M22 26v-9"/>',
   clock: '<circle cx="16" cy="16" r="9"/><path d="M16 11v6l4 2"/>',
+  phone: '<path d="M10.5 7.5h2.4l1.2 3.1-1.8 1.1a10 10 0 0 0 4.9 4.9l1.1-1.8 3.1 1.2v2.4c0 .9-.7 1.6-1.6 1.6C12.4 20 8 15.6 8 9.1c0-.9.7-1.6 1.6-1.6Z"/>',
+  mail: '<path d="M6 10h20v13H6V10Z"/><path d="M6 11l10 7 10-7"/>',
   home: '<path d="M6 14.5 16 6l10 8.5V26H6V14.5Z"/>',
   blocks: '<path d="M7 27V8h11v19M18 13h7v14"/><path d="M11 13h3M11 18h3M11 23h3"/>',
   key: '<circle cx="12" cy="16" r="4"/><path d="M16 16h11l-2.2 2.2L27 20.5h-3"/>',
@@ -49,7 +68,7 @@ function kopf(pfad) {
   }).join('');
   const ziel = pfad === '/hausbewertung-koeln/' ? '/' : '/hausbewertung-koeln/';
   const ctaText = pfad === '/hausbewertung-koeln/' ? 'Für Anleger' : 'Bewerten';
-  const ctaKlasse = pfad === '/hausbewertung-koeln/' ? 'btn btn-ghost nav-cta' : 'btn btn-gold nav-cta';
+  const ctaKlasse = pfad === '/hausbewertung-koeln/' ? 'btn btn-weiss nav-cta' : 'btn btn-blau nav-cta';
   return `<a class="skip" href="#inhalt">Zum Inhalt</a>
 <header class="top"><div class="top-innen">
     <a class="logo" href="/immobilie-verkaufen-koeln/">immo<i>.</i>cousins</a>
@@ -59,7 +78,9 @@ function kopf(pfad) {
       <summary><span class="sr">Menü</span><i></i></summary>
       <div class="menue-panel">${links}</div>
     </details>
-  </div></header>`;
+  </div>
+  <div class="scroll-bar" aria-hidden="true"><span id="scrollBar"></span></div>
+</header>`;
 }
 
 function fuss() {
@@ -75,25 +96,12 @@ function fuss() {
       <a href="/datenschutz/">Datenschutz</a>
     </nav>
     <p class="firma">Heimkauf CGN GmbH · Pilgrimstr. 6, 50674 Köln · Navid Chenari und Mir Nikan Chenari</p>
-  </div></footer>`;
+  </div></footer>
+<a class="wa-schwebend js-wa" href="https://instagram.com/immo.cousins">${WA_ICON}<span>WhatsApp</span></a>`;
 }
 
-function leiste(pfad) {
-  if (pfad === '/hausbewertung-koeln/') return '';
-  if (pfad === '/immobilie-verkaufen-koeln/') {
-    return '<div class="leiste"><a class="btn btn-gold" href="#bewerten">Jetzt kostenlos bewerten</a></div>';
-  }
-  if (pfad === '/tippgeber/') {
-    return '<div class="leiste"><a class="btn btn-gold" href="#tippForm">Tipp senden</a></div>';
-  }
-  const ziel = pfad === '/mehrfamilienhaus-verkaufen-koeln/'
-    ? '/hausbewertung-koeln/?art=mfh'
-    : pfad === '/erbimmobilie-verkaufen-koeln/'
-      ? '/hausbewertung-koeln/?anlass=erbe'
-      : pfad === '/wohnung-verkaufen-koeln/'
-        ? '/hausbewertung-koeln/?art=etw'
-        : '/hausbewertung-koeln/';
-  return `<div class="leiste"><a class="btn btn-gold" href="${ziel}">Jetzt kostenlos bewerten</a></div>`;
+function leiste() {
+  return '';
 }
 
 const BUSINESS = {
@@ -141,7 +149,7 @@ function dokument(seite) {
   const graph = [BUSINESS];
   if (seite.faq) graph.push(faqLd(seite.faq));
   const robots = seite.robots || 'index,follow';
-  const klasse = [seite.tool ? 'seite-tool' : 'mit-leiste', seite.bild ? 'hat-buehne' : ''].filter(Boolean).join(' ');
+  const klasse = [seite.tool ? 'seite-tool' : 'seite-marketing', seite.bild ? 'hat-buehne' : ''].filter(Boolean).join(' ');
   const preload = seite.bild
     ? `<link rel="preload" as="image" href="/verkaufen/bilder/hero-800.webp" media="(max-width: 899px)" fetchpriority="high">
 <link rel="preload" as="image" href="/verkaufen/bilder/hero-1600.webp" media="(min-width: 900px)" fetchpriority="high">`
@@ -152,7 +160,7 @@ function dokument(seite) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<meta name="theme-color" content="#0F5C55">
+<meta name="theme-color" content="#F5FAFF">
 <meta name="description" content="${esc(seite.description)}">
 <meta name="robots" content="${robots}">
 <link rel="canonical" href="${BASIS}${pfad}">
@@ -163,11 +171,13 @@ function dokument(seite) {
 <meta property="og:locale" content="de_DE">
 <meta property="og:image" content="${BASIS}/immo-cousins-hero.png">
 <title>${esc(seite.titel)}</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230F5C55'/><text x='16' y='23' text-anchor='middle' font-family='system-ui,sans-serif' font-size='19' font-weight='700' fill='%23E8B84B'>&#8364;</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231E2A5E'/><text x='16' y='22' text-anchor='middle' font-family='system-ui,sans-serif' font-size='16' font-weight='700' fill='%234DA9FF'>&#8364;</text></svg>">
+<script>document.documentElement.classList.add('js')</script>
 <link rel="preload" href="/verkaufen/fonts/plus-jakarta-700.woff2" as="font" type="font/woff2" crossorigin>
 ${preload}
 <link rel="stylesheet" href="/verkaufen/basis.css">
-${seite.tool ? '<!-- TODO Navid: WhatsApp-Nummer international ohne Plus, z. B. 491701234567 -->\n<meta name="ic-whatsapp" content="">' : ''}
+<!-- TODO Navid: WhatsApp-Nummer international ohne Plus, z. B. 491701234567 -->
+<meta name="ic-whatsapp" content="">
 ${jsonLd(graph)}
 </head>
 <body class="${klasse}">
@@ -177,18 +187,36 @@ ${seite.main}
 </main>
 ${leiste(pfad)}
 ${fuss()}
-${seite.tool ? '' : `<script>
+<script>
 (function(){
-  var bar=document.querySelector('.leiste');
-  var ziel=document.querySelector('.buehne .btn-gold');
-  if(!bar||!ziel||!('IntersectionObserver' in window)) return;
-  new IntersectionObserver(function(es){
-    var weg = !!es[0].isIntersecting;
-    bar.classList.toggle('weg', weg);
-    bar.toggleAttribute('inert', weg);
-  },{threshold:0.5}).observe(ziel);
+  var meta=document.querySelector('meta[name="ic-whatsapp"]');
+  var nr=meta&&meta.content?meta.content.replace(/\\D/g,''):'';
+  var href=nr?('https://wa.me/'+nr+'?text='+encodeURIComponent('Hallo, ich möchte eine Immobilie in Köln bewerten lassen.')):'https://instagram.com/immo.cousins';
+  document.querySelectorAll('.js-wa').forEach(function(a){
+    a.href=href;
+    if(!nr) a.title='WhatsApp-Nummer folgt. Bis dahin Instagram.';
+  });
+  var balken=document.getElementById('scrollBar');
+  function tick(){
+    if(!balken) return;
+    var doc=document.documentElement;
+    var max=doc.scrollHeight-doc.clientHeight;
+    balken.style.width=(max>0?(doc.scrollTop/max)*100:0)+'%';
+  }
+  addEventListener('scroll',tick,{passive:true});
+  tick();
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(!entry.isIntersecting) return;
+        entry.target.classList.add('sichtbar');
+        io.unobserve(entry.target);
+      });
+    },{threshold:0.16,rootMargin:'0px 0px -8% 0px'});
+    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  }
 })();
-</script>`}
+</script>
 ${seite.script || ''}
 </body>
 </html>
@@ -223,57 +251,80 @@ const faqWohnung = [
   ['Rechnet ihr mit dem Immobilienrichtwert?', 'Ja, soweit BORIS für die Adresse eine Zone für Eigentumswohnungen ausweist. Der Richtwert gilt für ein Normobjekt. Fläche, Baujahr, Geschoss und Zustand ordnen wir nur grob ein, nicht mit der amtlichen Umrechnungstabelle.'],
 ];
 
-function pills() {
-  return `<ul class="trust">
-    <li><a href="https://instagram.com/immo.cousins" rel="noopener">Instagram</a></li>
-    <li>48h Angebot</li>
-    <li>§34c</li>
-    <li>kostenlos &amp; unverbindlich</li>
+function siegel() {
+  return `<ul class="siegel">
+    <li><a href="https://instagram.com/immo.cousins" rel="noopener">${SHIELD} Instagram</a></li>
+    <li>${SHIELD} 48h Angebot</li>
+    <li>${SHIELD} §34c</li>
+    <li>${SHIELD} kostenlos &amp; unverbindlich</li>
   </ul>`;
 }
 
+function fliese(href, kategorie, titel, pos) {
+  return `<a class="fliese" href="${href}">
+    <img src="/verkaufen/bilder/hero-800.webp" width="800" height="533" alt="" style="object-position:${pos}">
+    <span class="kicker">${kategorie}</span>
+    <strong>${titel}</strong>
+  </a>`;
+}
+
+function zahlenBlock() {
+  return `<section class="zahlen reveal" aria-label="Kurz gesagt">
+  <div><b>48h</b><span>bis zum Angebot</span></div>
+  <div><b>0 €</b><span>Provision, wenn wir kaufen</span></div>
+  <div><b>2</b><span>Wege, du wählst</span></div>
+</section>`;
+}
+
+function kontaktBlock() {
+  return `<section class="kontakte reveal" aria-label="Kontakt">
+  <a class="kontakt-karte js-wa" href="https://instagram.com/immo.cousins"><span class="ico">${WA_ICON}</span><span><b>WhatsApp</b><span>Direkt schreiben</span></span></a>
+  <a class="kontakt-karte" href="https://calendly.com/nikan-heimkauf/45min">${ico(SVG.phone)}<span><b>Anrufen</b><span>Termin mit Nikan</span></span></a>
+  <a class="kontakt-karte" href="mailto:chenari.immo@gmail.com">${ico(SVG.mail)}<span><b>E-Mail</b><span>chenari.immo@gmail.com</span></span></a>
+</section>`;
+}
+
+function band(href) {
+  return `<section class="band-cta reveal">
+  <p class="kicker">Nächster Schritt</p>
+  <h2>Bereit für eine Zahl?</h2>
+  <p class="sub">Adresse rein. Spanne sofort. Angebot in 48 Stunden.</p>
+  ${ctaPaar(href)}
+</section>`;
+}
+
 const hub = `
-<section class="buehne">
-  ${HERO}
-  <div class="buehne-copy">
-    <p class="kicker">Köln · Rhein-Erft</p>
-    <h1>Verkaufe deine Immobilie in Köln.</h1>
-    <p class="sub">Kostenlose Spanne. Kaufangebot in 48 Stunden.</p>
-    ${pills()}
-    <form class="suche" id="bewerten" action="/hausbewertung-koeln/" method="get">
-      <label>Straße<input name="strasse" type="text" autocomplete="address-line1" enterkeyhint="next"></label>
-      <label>Nr.<input name="nr" type="text" autocomplete="address-line2" enterkeyhint="next"></label>
-      <label>PLZ<input name="plz" type="text" inputmode="numeric" maxlength="5" autocomplete="postal-code" enterkeyhint="next"></label>
-      <label>Ort<input name="ort" type="text" value="Köln" autocomplete="address-level2" enterkeyhint="done"></label>
-      <button class="btn btn-gold" type="submit">Jetzt kostenlos bewerten</button>
-    </form>
-  </div>
+<section class="zentriert spalte">
+  <p class="kicker">Köln · Rhein-Erft</p>
+  <h1>Verkaufe deine Immobilie <span class="blau">in Köln.</span></h1>
+  <p class="sub">Kostenlose Spanne. Kaufangebot in 48 Stunden. Du entscheidest, ob wir kaufen oder als Makler verkaufen.</p>
+  ${ctaPaar('#bewerten')}
 </section>
-<section class="wrap band" aria-labelledby="ablauf">
-  <h2 id="ablauf">So einfach.</h2>
-  <div class="karten drei">
-    <article class="karte">${ico(SVG.pin)}<h3>Adresse</h3><p>Bodenrichtwert sofort.</p></article>
-    <article class="karte">${ico(SVG.chart)}<h3>Spanne</h3><p>Aus amtlichen Werten.</p></article>
-    <article class="karte">${ico(SVG.clock)}<h3>Angebot</h3><p>In 48 Stunden bei dir.</p></article>
-  </div>
+${HERO}
+${laufband()}
+<form class="suche" id="bewerten" action="/hausbewertung-koeln/" method="get">
+  <label>Straße<input name="strasse" type="text" autocomplete="address-line1" enterkeyhint="next"></label>
+  <label>Nr.<input name="nr" type="text" autocomplete="address-line2" enterkeyhint="next"></label>
+  <label>PLZ<input name="plz" type="text" inputmode="numeric" maxlength="5" autocomplete="postal-code" enterkeyhint="next"></label>
+  <label>Ort<input name="ort" type="text" value="Köln" autocomplete="address-level2" enterkeyhint="done"></label>
+  <button class="btn btn-blau" type="submit">Jetzt kostenlos bewerten</button>
+</form>
+${siegel()}
+${zahlenBlock()}
+<section class="fliesen reveal" aria-label="Wobei wir helfen">
+  ${fliese('/wohnung-verkaufen-koeln/', 'Wohnung', 'Richtwert der Zone', '50% 40%')}
+  ${fliese('/mehrfamilienhaus-verkaufen-koeln/', 'Mehrfamilienhaus', 'Miete mal Faktor', '30% 70%')}
+  ${fliese('/erbimmobilie-verkaufen-koeln/', 'Erbe', 'Diskret, ohne Entrümpeln', '70% 30%')}
 </section>
-<section class="wrap band" aria-labelledby="faelle">
-  <h2 id="faelle">Wobei wir helfen.</h2>
-  <div class="karten drei">
-    <a class="karte karte-link" href="/wohnung-verkaufen-koeln/">${ico(SVG.home)}<h3>Wohnung</h3><p>Richtwert der Zone.</p></a>
-    <a class="karte karte-link" href="/mehrfamilienhaus-verkaufen-koeln/">${ico(SVG.blocks)}<h3>Mehrfamilienhaus</h3><p>Miete mal Faktor.</p></a>
-    <a class="karte karte-link" href="/erbimmobilie-verkaufen-koeln/">${ico(SVG.key)}<h3>Erbe</h3><p>Diskret, ohne Entrümpeln.</p></a>
-  </div>
-</section>
-<section class="team" aria-labelledby="wer">
-  <img src="/immo-cousins-hero.webp" width="360" height="360" alt="Navid und Mir Nikan Chenari, immo.cousins aus Köln">
-  <div>
-    <h2 id="wer">Navid und Nikan.</h2>
-    <p>Cousins in Köln. Wir kaufen selbst oder verkaufen als Makler.</p>
-    <p><a href="https://instagram.com/immo.cousins" rel="noopener">@immo.cousins</a></p>
-  </div>
-</section>
-<section class="wrap faq-block" aria-labelledby="hFaq">
+<article class="gruender reveal" aria-labelledby="wer">
+  <img src="/immo-cousins-hero.webp" width="224" height="224" alt="Navid und Mir Nikan Chenari">
+  <h2 id="wer">Navid und Nikan</h2>
+  <p>Cousins in Köln. Wir kaufen selbst oder verkaufen als Makler.</p>
+  <p class="wertung">Persönlich erreichbar · @immo.cousins</p>
+</article>
+${kontaktBlock()}
+${band('/hausbewertung-koeln/')}
+<section class="faq-block" aria-labelledby="hFaq">
   <h2 id="hFaq">Fragen</h2>
   ${faqHtml(faqHub)}
 </section>
@@ -281,24 +332,24 @@ const hub = `
 
 function spoke(kicker, titel, sub, ziel, karten) {
   return `
-<section class="buehne buehne-kurz">
-  ${HERO}
-  <div class="buehne-copy">
-    <p class="kicker">${kicker}</p>
-    <h1>${titel}</h1>
-    <p class="sub">${sub}</p>
-    ${pills()}
-    <p style="margin-top:18px"><a class="btn btn-gold" href="${ziel}">Jetzt kostenlos bewerten</a></p>
-  </div>
+<section class="zentriert spalte">
+  <p class="kicker">${kicker}</p>
+  <h1>${titel}</h1>
+  <p class="sub">${sub}</p>
+  ${ctaPaar(ziel)}
 </section>
-<section class="wrap band">
-  <div class="karten drei">${karten}</div>
-</section>`;
+${HERO}
+${laufband()}
+${siegel()}
+<section class="wrap reveal" style="padding:8px 0 20px"><div class="karten drei">${karten}</div></section>
+${zahlenBlock()}
+${kontaktBlock()}
+${band(ziel)}`;
 }
 
 const mfh = spoke(
   'Mehrfamilienhaus',
-  'Mehrfamilienhaus verkaufen.',
+  'Mehrfamilienhaus <span class="blau">verkaufen.</span>',
   'Miete mal Faktor. Angebot in 48 Stunden.',
   '/hausbewertung-koeln/?art=mfh',
   `<article class="karte">${ico(SVG.chart)}<h3>Faktor</h3><p>15, 21 und 29 auf die Jahresmiete.</p></article>
@@ -312,7 +363,7 @@ const mfh = spoke(
 
 const erb = spoke(
   'Erbe',
-  'Geerbt. Und jetzt?',
+  'Geerbt. <span class="blau">Und jetzt?</span>',
   'Diskret. Ohne Entrümpeln vorher.',
   '/hausbewertung-koeln/?anlass=erbe',
   `<article class="karte">${ico(SVG.key)}<h3>Gemeinschaft</h3><p>Eine Ansprechperson für alle.</p></article>
@@ -326,7 +377,7 @@ const erb = spoke(
 
 const wohnung = spoke(
   'Wohnung',
-  'Wohnung in Köln verkaufen.',
+  'Wohnung in Köln <span class="blau">verkaufen.</span>',
   'Richtwert der Zone. Danach deine Wahl.',
   '/hausbewertung-koeln/?art=etw',
   `<article class="karte">${ico(SVG.pin)}<h3>Zone</h3><p>Immobilienrichtwert von BORIS.</p></article>
@@ -343,6 +394,7 @@ const tipp = `
   <p class="kicker">Tippgeber</p>
   <h1>Du kennst ein Objekt?</h1>
   <p class="sub">Bonus, wenn wir kaufen. Der Betrag folgt.</p>
+  ${siegel()}
   <div class="todo"><strong>TODO für Navid:</strong> Bonus-Betrag eintragen. Vorschlag für den Satz danach: „Du erhältst [Betrag] €, wenn wir die Immobilie kaufen.“</div>
   <p><strong>Bonus: Betrag folgt.</strong> Gezahlt wird er, wenn aus dem Tipp ein Ankauf durch die Heimkauf CGN GmbH wird, nicht schon für die Nachricht und nicht bei einer reinen Maklervermittlung.</p>
 </article>
@@ -409,6 +461,7 @@ const tipp = `
     <p class="form-fehler" id="tippFehler" role="status"></p>
   </form>
 </section>
+${band('/hausbewertung-koeln/')}
 `;
 
 const impressum = `
