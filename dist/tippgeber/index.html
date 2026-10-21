@@ -117,7 +117,7 @@
 </section>
 <section class="band-cta reveal">
   <p class="kicker">Nächster Schritt</p>
-  <h2>Bereit für eine Zahl?</h2>
+  <h2 class="maske"><span class="wort" style="--i:0"><span>Bereit</span></span> <span class="wort" style="--i:1"><span>für</span></span> <span class="wort" style="--i:2"><span>eine</span></span> <span class="wort" style="--i:3"><span>Zahl?</span></span></h2>
   <p class="sub">Adresse rein. Spanne sofort. Angebot in 48 Stunden.</p>
   <div class="cta-paar">
     <a class="btn btn-blau" href="/hausbewertung-koeln/">Jetzt kostenlos bewerten</a>
@@ -167,10 +167,11 @@
         io.unobserve(entry.target);
       });
     },{threshold:0.16,rootMargin:'0px 0px -8% 0px'});
-    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+    document.querySelectorAll('.reveal, .maske').forEach(function(el){ io.observe(el); });
   }
 })();
 </script>
+<script src="/verkaufen/motion.js"></script>
 <script src="/verkaufen/tipp.js"></script>
 </body>
 </html>

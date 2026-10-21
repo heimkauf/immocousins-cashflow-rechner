@@ -38,7 +38,7 @@ for d in immobilie-verkaufen-koeln hausbewertung-koeln mehrfamilienhaus-verkaufe
   cp "$d/index.html" "dist/$d/index.html"
 done
 mkdir -p dist/verkaufen/fonts dist/verkaufen/bilder
-cp verkaufen/basis.css verkaufen/funnel.js verkaufen/tipp.js dist/verkaufen/
+cp verkaufen/basis.css verkaufen/funnel.js verkaufen/tipp.js verkaufen/motion.js dist/verkaufen/
 cp verkaufen/fonts/*.woff2 dist/verkaufen/fonts/
 cp verkaufen/bilder/*.webp dist/verkaufen/bilder/
 

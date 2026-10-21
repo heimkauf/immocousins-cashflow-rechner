@@ -99,10 +99,11 @@
         io.unobserve(entry.target);
       });
     },{threshold:0.16,rootMargin:'0px 0px -8% 0px'});
-    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+    document.querySelectorAll('.reveal, .maske').forEach(function(el){ io.observe(el); });
   }
 })();
 </script>
+<script src="/verkaufen/motion.js"></script>
 
 </body>
 </html>

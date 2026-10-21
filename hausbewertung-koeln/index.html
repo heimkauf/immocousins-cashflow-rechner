@@ -40,7 +40,7 @@
 <main id="inhalt">
 <header class="werk-kopf">
   <p class="kicker">Köln · Rhein-Erft</p>
-  <h1>Was ist deine Immobilie <span class="blau">wert?</span></h1>
+  <h1 class="maske"><span class="wort" style="--i:0"><span>Was</span></span> <span class="wort" style="--i:1"><span>ist</span></span> <span class="wort" style="--i:2"><span>deine</span></span> <span class="wort" style="--i:3"><span>Immobilie</span></span> <span class="blau"><span class="wort" style="--i:4"><span>wert?</span></span></span></h1>
   <p class="sub">Kostenlos und unverbindlich. Die Spanne kommt vor der E-Mail.</p>
   <p class="menschen"><img src="/immo-cousins-hero.webp" width="80" height="80" alt="Navid und Mir Nikan Chenari">Navid und Nikan</p>
 </header>
@@ -353,10 +353,11 @@
         io.unobserve(entry.target);
       });
     },{threshold:0.16,rootMargin:'0px 0px -8% 0px'});
-    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+    document.querySelectorAll('.reveal, .maske').forEach(function(el){ io.observe(el); });
   }
 })();
 </script>
+<script src="/verkaufen/motion.js"></script>
 <script src="/verkaufen/funnel.js"></script>
 </body>
 </html>

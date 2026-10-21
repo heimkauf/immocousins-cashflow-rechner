@@ -18,7 +18,10 @@ const NAV = [
 ];
 
 const HERO = `<figure class="hero-bild">
-    <img src="/verkaufen/bilder/hero-800.webp" srcset="/verkaufen/bilder/hero-800.webp 800w, /verkaufen/bilder/hero-1600.webp 1600w" sizes="(min-width: 900px) 920px, 100vw" width="1600" height="1067" alt="Begrünte Wohnstraße mit Altbauten" fetchpriority="high" decoding="async">
+    <span class="hero-rahmen">
+      <img src="/verkaufen/bilder/hero-800.webp" srcset="/verkaufen/bilder/hero-800.webp 800w, /verkaufen/bilder/hero-1600.webp 1600w" sizes="(min-width: 900px) 920px, 100vw" width="1600" height="1067" alt="Begrünte Wohnstraße mit Altbauten" fetchpriority="high" decoding="async">
+    </span>
+    <span class="hero-wasch" aria-hidden="true"></span>
     <p class="credit">Foto: <a href="https://unsplash.com/license" rel="noopener">Unsplash-Lizenz</a></p>
   </figure>`;
 
@@ -52,6 +55,17 @@ const SVG = {
   blocks: '<path d="M7 27V8h11v19M18 13h7v14"/><path d="M11 13h3M11 18h3M11 23h3"/>',
   key: '<circle cx="12" cy="16" r="4"/><path d="M16 16h11l-2.2 2.2L27 20.5h-3"/>',
 };
+
+function maskeText(html) {
+  let i = 0;
+  return String(html).split(/(<[^>]+>)/).map((teil) => {
+    if (teil.startsWith('<')) return teil;
+    return teil.replace(/\S+/g, (wort) => {
+      const n = i++;
+      return `<span class="wort" style="--i:${n}"><span>${wort}</span></span>`;
+    });
+  }).join('');
+}
 
 function esc(s) {
   return String(s)
@@ -213,10 +227,11 @@ ${fuss()}
         io.unobserve(entry.target);
       });
     },{threshold:0.16,rootMargin:'0px 0px -8% 0px'});
-    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+    document.querySelectorAll('.reveal, .maske').forEach(function(el){ io.observe(el); });
   }
 })();
 </script>
+<script src="/verkaufen/motion.js"></script>
 ${seite.script || ''}
 </body>
 </html>
@@ -268,11 +283,42 @@ function fliese(href, kategorie, titel, pos) {
   </a>`;
 }
 
+function zaehl(wert, zusatz, sichtbar) {
+  return `<b class="zaehl" data-bis="${wert}" data-zusatz="${zusatz}"><span class="zaehl-fest">${sichtbar}</span><span class="zaehl-lauf" aria-hidden="true">${sichtbar}</span></b>`;
+}
+
 function zahlenBlock() {
   return `<section class="zahlen reveal" aria-label="Kurz gesagt">
-  <div><b>48h</b><span>bis zum Angebot</span></div>
-  <div><b>0 €</b><span>Provision, wenn wir kaufen</span></div>
-  <div><b>2</b><span>Wege, du wählst</span></div>
+  <div>${zaehl(48, 'h', '48h')}<span>bis zum Angebot</span></div>
+  <div>${zaehl(0, ' €', '0 €')}<span>Provision, wenn wir kaufen</span></div>
+  <div>${zaehl(2, '', '2')}<span>Wege, du wählst</span></div>
+</section>`;
+}
+
+function ablauf() {
+  return `<section class="ablauf" aria-labelledby="ablaufTitel">
+  <div class="ablauf-pin">
+    <p class="kicker">So läuft's</p>
+    <h2 id="ablaufTitel" class="maske">${maskeText('In drei Schritten.')}</h2>
+    <div class="ablauf-buehne">
+      <p class="ablauf-zahl" aria-hidden="true">01</p>
+      <div class="ablauf-schritte">
+        <article class="ist-da">
+          <h3>Adresse</h3>
+          <p>Straße rein. Den Richtwert siehst du sofort.</p>
+        </article>
+        <article>
+          <h3>Spanne</h3>
+          <p>Eine grobe Zahl, vor der E-Mail.</p>
+        </article>
+        <article>
+          <h3>Angebot</h3>
+          <p>In 48 Stunden. Du wählst den Weg.</p>
+        </article>
+      </div>
+    </div>
+    <div class="ablauf-punkte" aria-hidden="true"><i class="ist-da"></i><i></i><i></i></div>
+  </div>
 </section>`;
 }
 
@@ -287,7 +333,7 @@ function kontaktBlock() {
 function band(href) {
   return `<section class="band-cta reveal">
   <p class="kicker">Nächster Schritt</p>
-  <h2>Bereit für eine Zahl?</h2>
+  <h2 class="maske">${maskeText('Bereit für eine Zahl?')}</h2>
   <p class="sub">Adresse rein. Spanne sofort. Angebot in 48 Stunden.</p>
   ${ctaPaar(href)}
 </section>`;
@@ -296,7 +342,7 @@ function band(href) {
 const hub = `
 <section class="zentriert spalte">
   <p class="kicker">Köln · Rhein-Erft</p>
-  <h1>Verkaufe deine Immobilie <span class="blau">in Köln.</span></h1>
+  <h1 class="maske">${maskeText('Verkaufe deine Immobilie <span class="blau">in Köln.</span>')}</h1>
   <p class="sub">Kostenlose Spanne. Kaufangebot in 48 Stunden. Du entscheidest, ob wir kaufen oder als Makler verkaufen.</p>
   ${ctaPaar('#bewerten')}
 </section>
@@ -311,6 +357,7 @@ ${laufband()}
 </form>
 ${siegel()}
 ${zahlenBlock()}
+${ablauf()}
 <section class="fliesen reveal" aria-label="Wobei wir helfen">
   ${fliese('/wohnung-verkaufen-koeln/', 'Wohnung', 'Richtwert der Zone', '50% 40%')}
   ${fliese('/mehrfamilienhaus-verkaufen-koeln/', 'Mehrfamilienhaus', 'Miete mal Faktor', '30% 70%')}
@@ -318,7 +365,7 @@ ${zahlenBlock()}
 </section>
 <article class="gruender reveal" aria-labelledby="wer">
   <img src="/immo-cousins-hero.webp" width="224" height="224" alt="Navid und Mir Nikan Chenari">
-  <h2 id="wer">Navid und Nikan</h2>
+  <h2 id="wer" class="maske">${maskeText('Navid und Nikan')}</h2>
   <p>Cousins in Köln. Wir kaufen selbst oder verkaufen als Makler.</p>
   <p class="wertung">Persönlich erreichbar · @immo.cousins</p>
 </article>
@@ -334,7 +381,7 @@ function spoke(kicker, titel, sub, ziel, karten) {
   return `
 <section class="zentriert spalte">
   <p class="kicker">${kicker}</p>
-  <h1>${titel}</h1>
+  <h1 class="maske">${maskeText(titel)}</h1>
   <p class="sub">${sub}</p>
   ${ctaPaar(ziel)}
 </section>
@@ -342,6 +389,7 @@ ${HERO}
 ${laufband()}
 ${siegel()}
 <section class="wrap reveal" style="padding:8px 0 20px"><div class="karten drei">${karten}</div></section>
+${ablauf()}
 ${zahlenBlock()}
 ${kontaktBlock()}
 ${band(ziel)}`;
