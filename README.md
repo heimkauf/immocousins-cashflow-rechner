@@ -412,6 +412,35 @@ die DMARC-Prüfung), MX und DMARC unverändert.
 Wird künftig aus `immocousins.de` über Microsoft 365 versendet — heimkauf.de
 nutzt das —, muss `include:spf.protection.outlook.com` ergänzt werden.
 
+## Verkäufer-Funnel
+
+Zweite Säule neben der Investoren-Startseite, unter anderem:
+
+| Adresse | Inhalt |
+|---|---|
+| `/immobilie-verkaufen-koeln/` | Hub |
+| `/hausbewertung-koeln/` | Bewertung, acht Schritte |
+| `/mehrfamilienhaus-verkaufen-koeln/` | Mehrfamilienhaus |
+| `/erbimmobilie-verkaufen-koeln/` | Erbimmobilie |
+| `/wohnung-verkaufen-koeln/` | Eigentumswohnung |
+| `/tippgeber/` | Tippgeber, Bonus noch Platzhalter |
+| `/impressum/` | eigenes Impressum, Pflichtfelder noch offen |
+
+Die Investoren-Startseite bleibt. Im Footer steht ein zusätzlicher Link hierher.
+
+Bewertung und Leads laufen über Pages Functions: `POST /api/lage` (Bodenrichtwert), `POST /api/bewertung` (Spanne), `POST /api/lead` mit `quelle: "verkauf"` oder `"tippgeber"`. Investoren-Leads (`kontakt`, `rechner`) laufen unverändert. Verkaufsleads liegen zusätzlich in `leads_verkauf`; das `CREATE TABLE` macht die Function beim ersten Lead, `schema-verkauf.sql` ist dieselbe Anweisung zum Nachlesen.
+
+Richtwerte kommen serverseitig von BORIS.NRW (WMS GetFeatureInfo, Datenlizenz Deutschland Zero 2.0). Für Mehrfamilienhäuser: Jahresnettokaltmiete × Faktor aus dem Grundstücksmarktbericht Köln 2026. Kein Autocomplete. Produktiv `GEOCODER_URL` auf eine eigene Photon-Instanz setzen. Ohne diese URL löst ein einzelner Aufruf pro Adresse über Nominatim auf.
+
+Asana und die Mail an `chenari.immo@gmail.com` laufen nur, wenn `ASANA_TOKEN` bzw. `RESEND_API_KEY` gesetzt sind. Fehlt ein Schlüssel, wird der Lead trotzdem gespeichert. Schlüssel nicht ins Repo.
+
+```bash
+node --test
+node scripts/vorschau.mjs
+```
+
+Die Vorschau spricht die echten BORIS-Dienste an und speichert Leads nur im Speicher des Prozesses. `./deploy.sh` baut `dist/`, ein Deploy ist damit nicht verbunden.
+
 ## Offene Punkte
 
 - **Datenschutzerklärung anwaltlich gegenlesen lassen** und den

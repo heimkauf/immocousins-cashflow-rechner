@@ -6,31 +6,27 @@
  * kein Tracking - nur die Felder, die der Nutzer selbst eingegeben hat.
  *
  * Optionale Umgebungsvariablen im Pages-Projekt:
- *   RESEND_API_KEY   Schluessel von resend.com (verschluesselt hinterlegen)
- *   MAIL_VON         Absender, z. B. "immo.cousins <lead@immocousins.de>"
- *   MAIL_AN          Empfaenger, Standard verwaltung@heimkauf.de
- * Fehlt der Schluessel, wird der Lead trotzdem gespeichert - nur eben
- * ohne Benachrichtigung.
+ *   RESEND_API_KEY      Schluessel von resend.com (verschluesselt hinterlegen)
+ *   MAIL_VON            Absender, z. B. "immo.cousins <lead@immocousins.de>"
+ *   MAIL_AN             Empfaenger der Investoren-Leads, Standard verwaltung@heimkauf.de
+ *   MAIL_VERKAUF        Empfaenger der Verkaeufer-Leads, Standard chenari.immo@gmail.com
+ *   ASANA_TOKEN         Asana-Zugriff, nur fuer Verkaeufer-Leads
+ *   ASANA_PROJECT_GID   Standard 1217792767875702
+ *   ASANA_SECTION_GID   Standard 1217792888034081
+ * Fehlt ein Schluessel, wird der Lead trotzdem gespeichert.
  */
+
+import { herkunftOk, json } from '../../lib/http.js';
+import { istVerkauf, validiereVerkauf, TABELLE_SQL, INDEX_SQL } from '../../lib/verkauf.js';
+import { scoreLead } from '../../lib/scoring.js';
+import { regionAus } from '../../lib/region.js';
+import { bewerten, brwFuerArt } from '../../lib/bewerten.js';
+import { legeAsanaAn } from '../../lib/asana.js';
+import { euro } from '../../lib/zahl.js';
+import { DISCLAIMER } from '../../lib/texte.js';
 
 const MAX = { name: 100, email: 254, telefon: 40, nachricht: 4000 };
 
-const ERLAUBTE_HERKUNFT = [
-  'https://immocousins.de',
-  'https://www.immocousins.de',
-];
-
-function json(daten, status) {
-  return new Response(JSON.stringify(daten), {
-    status: status,
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store',
-    },
-  });
-}
-
-/* Steuerzeichen entfernen und auf eine sinnvolle Laenge kuerzen */
 function saubern(wert, grenze) {
   if (typeof wert !== 'string') return '';
   let raus = '';
@@ -88,16 +84,189 @@ async function benachrichtigen(env, lead) {
   }
 }
 
+async function benachrichtigenVerkauf(env, lead) {
+  if (!env.RESEND_API_KEY) return { versandt: false, grund: 'kein Schluessel' };
+  const von = env.MAIL_VON || 'immo.cousins <lead@immocousins.de>';
+  const an = env.MAIL_VERKAUF || 'chenari.immo@gmail.com';
+  const ort = [lead.plz, lead.ort].filter(Boolean).join(' ');
+  const zeilen = [
+    'Neuer Verkaeufer-Lead ueber immocousins.de',
+    '',
+    'Score:    ' + lead.score + (lead.gruende && lead.gruende.length ? ' (' + lead.gruende.join(', ') + ')' : ''),
+    'Weg:      ' + (lead.weg || '-'),
+    'Name:     ' + lead.vorname,
+    'E-Mail:   ' + lead.email,
+    'Telefon:  ' + (lead.telefon || '-'),
+    'Adresse:  ' + [lead.strasse, lead.hausnummer, ort].filter(Boolean).join(' '),
+    'Art:      ' + (lead.art || '-'),
+    'Zeit:     ' + lead.erstellt,
+    '',
+    lead.kurz || '',
+  ];
+  try {
+    const antwort = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer ' + env.RESEND_API_KEY,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: von,
+        to: [an],
+        reply_to: lead.email,
+        subject: '[' + lead.score + '] Verkaufslead: ' + lead.vorname + (ort ? ', ' + ort : ''),
+        text: zeilen.join('\n'),
+      }),
+    });
+    return { versandt: antwort.ok, grund: antwort.ok ? '' : 'HTTP ' + antwort.status };
+  } catch (e) {
+    return { versandt: false, grund: 'Netzwerkfehler' };
+  }
+}
+
+function fasseZusammen(lead, bewertung, gegen) {
+  const o = lead.objekt;
+  const teile = [
+    'Weg: ' + lead.weg,
+    'Score: ' + lead.score,
+    o.art && 'Art: ' + o.art,
+    (o.strasse || o.plz) && 'Adresse: ' + [o.strasse, o.hausnummer, o.plz, o.ort].filter(Boolean).join(' '),
+    o.wohnflaeche && 'Flaeche: ' + o.wohnflaeche + ' m²',
+    o.we && 'WE: ' + o.we,
+    o.anlass && 'Anlass: ' + o.anlass,
+    o.zeitpunkt && 'Zeitpunkt: ' + o.zeitpunkt,
+    bewertung && bewertung.spanne && 'Spanne: ' + euro(bewertung.spanne.niedrig) + ' – ' + euro(bewertung.spanne.hoch),
+    gegen && gegen.wert && 'Ertragswert intern: ' + euro(gegen.wert),
+    lead.nachricht && 'Notiz: ' + lead.nachricht,
+  ];
+  return teile.filter(Boolean).join('\n').slice(0, 4000);
+}
+
+async function verkaufsLead(context, daten) {
+  const { env, waitUntil } = context;
+  const geprueft = validiereVerkauf(daten);
+  if (!geprueft.ok) return json({ ok: false, fehler: geprueft.fehler }, 400);
+  if (!env.DB) return json({ ok: false, fehler: 'Speicher nicht verfuegbar.' }, 500);
+
+  const lead = geprueft.lead;
+  const objekt = lead.objekt;
+  const region = regionAus(objekt.plz, objekt.ort);
+  const wertung = scoreLead({
+    typ: lead.typ,
+    weg: lead.weg,
+    art: objekt.art,
+    region,
+    we: objekt.we,
+    leerstand: objekt.leerstand,
+    anlass: objekt.anlass,
+    zeitpunkt: objekt.zeitpunkt,
+    nutzung: objekt.nutzung,
+  });
+
+  const brw = brwFuerArt(objekt.art, {
+    mehrgeschossig: daten.mehrgeschossig || null,
+    einZweifamilien: daten.einZweifamilien || null,
+  });
+  const irw = daten.irw || null;
+  const modell = bewerten({ ...objekt, region }, { brw, irw });
+  const gegen = modell.gegenrechnung || null;
+
+  const zusammen = fasseZusammen({ ...lead, score: wertung.score }, modell, gegen);
+  const telefon = lead.telefonEinwilligung ? lead.telefon : '';
+
+  try {
+    await env.DB.prepare(
+      'INSERT INTO leads (erstellt, quelle, vorname, nachname, email, telefon, nachricht, einwilligung)' +
+        ' VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
+    )
+      .bind(lead.erstellt, lead.quelle, lead.vorname, lead.nachname, lead.email, telefon, zusammen)
+      .run();
+  } catch (e) {
+    return json({ ok: false, fehler: 'Speichern fehlgeschlagen. Bitte spaeter erneut versuchen.' }, 500);
+  }
+
+  const payload = {
+    ...lead,
+    telefon,
+    region,
+    score: wertung.score,
+    gruende: wertung.gruende,
+    qualifizierung: wertung.qualifizierung || '',
+    qualGruende: wertung.qualGruende || [],
+    modell: {
+      verfahren: modell.verfahren,
+      spanne: modell.spanne,
+      hinweis: modell.hinweis,
+    },
+    gegenrechnung: gegen,
+  };
+
+  try {
+    await env.DB.prepare(TABELLE_SQL).run();
+    await env.DB.prepare(INDEX_SQL).run();
+    await env.DB.prepare(
+      'INSERT INTO leads_verkauf (erstellt, vorname, nachname, email, telefon, telefon_einwilligung, einwilligung, weg, score, plz, ort, art, payload)' +
+        ' VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)'
+    )
+      .bind(
+        lead.erstellt,
+        lead.vorname,
+        lead.nachname,
+        lead.email,
+        telefon,
+        lead.telefonEinwilligung ? 1 : 0,
+        lead.weg,
+        wertung.score,
+        objekt.plz,
+        objekt.ort,
+        objekt.art,
+        JSON.stringify(payload)
+      )
+      .run();
+  } catch (e) {
+    /* Die Kurzfassung liegt bereits in leads.nachricht. */
+  }
+
+  const fuerDraussen = {
+    score: wertung.score,
+    gruende: wertung.gruende,
+    qualifizierung: wertung.qualifizierung,
+    qualGruende: wertung.qualGruende,
+    vorname: lead.vorname,
+    nachname: lead.nachname,
+    email: lead.email,
+    telefon,
+    rueckruf: lead.rueckruf,
+    weg: lead.weg,
+    art: objekt.art,
+    plz: objekt.plz,
+    ort: objekt.ort,
+    strasse: objekt.strasse,
+    hausnummer: objekt.hausnummer,
+    objekt,
+    spanne: modell.spanne,
+    gegenrechnung: gegen,
+    nachricht: lead.nachricht,
+    disclaimer: DISCLAIMER,
+    erstellt: lead.erstellt,
+    kurz: zusammen,
+  };
+
+  const nebenher = Promise.all([
+    legeAsanaAn(env, fuerDraussen).catch(() => ({ angelegt: false })),
+    benachrichtigenVerkauf(env, fuerDraussen).catch(() => ({ versandt: false })),
+  ]);
+  if (typeof waitUntil === 'function') waitUntil(nebenher);
+  else await nebenher;
+
+  return json({ ok: true }, 200);
+}
+
 export async function onRequestPost(context) {
   const { request, env, waitUntil } = context;
 
   /* Nur von den eigenen Domains annehmen - verhindert fremde Einreichungen */
-  const herkunft = request.headers.get('origin') || '';
-  const okHerkunft =
-    !herkunft ||
-    ERLAUBTE_HERKUNFT.includes(herkunft) ||
-    herkunft.endsWith('.immocousins-rechner.pages.dev');
-  if (!okHerkunft) {
+  if (!herkunftOk(request)) {
     return json({ ok: false, fehler: 'Ungueltige Herkunft.' }, 403);
   }
 
@@ -111,6 +280,8 @@ export async function onRequestPost(context) {
   /* Honeypot: Bots fuellen unsichtbare Felder aus. Wir antworten freundlich,
      speichern aber nichts. */
   if (saubern(daten.website, 100)) return json({ ok: true }, 200);
+
+  if (istVerkauf(daten)) return verkaufsLead(context, daten);
 
   const lead = {
     erstellt: new Date().toISOString(),

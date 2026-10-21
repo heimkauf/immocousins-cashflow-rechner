@@ -1,0 +1,272 @@
+<header class="werk-kopf">
+  <p class="kicker">Köln · Rhein-Erft</p>
+  <h1 class="maske"><span class="wort" style="--i:0"><span>Was</span></span> <span class="wort" style="--i:1"><span>ist</span></span> <span class="wort" style="--i:2"><span>deine</span></span> <span class="wort" style="--i:3"><span>Immobilie</span></span> <span class="blau"><span class="wort" style="--i:4"><span>wert?</span></span></span></h1>
+  <p class="sub">Kostenlos und unverbindlich. Die Spanne kommt vor der E-Mail.</p>
+  <p class="menschen"><img src="/immo-cousins-hero.webp" width="80" height="80" alt="Navid und Mir Nikan Chenari">Navid und Nikan</p>
+</header>
+
+<div class="wrap eng">
+  <noscript>
+    <p class="disclaimer">Für die Abfrage braucht die Seite JavaScript. Du erreichst uns auch über <a href="https://calendly.com/nikan-heimkauf/45min">einen Termin</a> oder <a href="https://instagram.com/immo.cousins">Instagram</a>.</p>
+  </noscript>
+
+  <form id="funnel" class="funnel" novalidate>
+    <div class="fort-kopf">
+      <p class="schritt-label" id="schrittLabel">Adresse</p>
+      <div class="fortschritt" id="fortschritt" role="progressbar" aria-valuemin="1" aria-valuemax="8" aria-valuenow="1" aria-label="Fortschritt"><span id="fortschrittBalken"></span></div>
+    </div>
+
+    <section class="frage" data-step="adresse">
+      <h2>Wo steht sie?</h2>
+      <p class="sub">Straße und Hausnummer. Den Bodenrichtwert holen wir direkt danach.</p>
+      <div class="feld-paar">
+        <div class="feld">
+          <label class="lbl" for="fStrasse">Straße</label>
+          <input id="fStrasse" name="strasse" type="text" autocomplete="address-line1" enterkeyhint="next" required>
+        </div>
+        <div class="feld">
+          <label class="lbl" for="fNr">Nr.</label>
+          <input id="fNr" name="hausnummer" type="text" autocomplete="address-line2" enterkeyhint="next" required>
+        </div>
+      </div>
+      <div class="feld-paar">
+        <div class="feld">
+          <label class="lbl" for="fPlz">PLZ</label>
+          <input id="fPlz" name="plz" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" enterkeyhint="next" required>
+        </div>
+        <div class="feld">
+          <label class="lbl" for="fOrt">Ort</label>
+          <input id="fOrt" name="ort" type="text" autocomplete="address-level2" value="Köln" enterkeyhint="done" required>
+        </div>
+      </div>
+      <div class="brw" id="brwBox" hidden aria-live="polite"></div>
+    </section>
+
+    <section class="frage" data-step="art" hidden>
+      <h2>Was ist es?</h2>
+      <div class="kacheln gitter" role="radiogroup" aria-label="Objektart">
+        <label class="kachel"><input type="radio" name="art" value="etw"><span class="ico" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M8 14.5 16 8l8 6.5V25H8V14.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 25v-6h4v6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span><strong>Wohnung</strong></label>
+        <label class="kachel"><input type="radio" name="art" value="efh"><span class="ico" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 15 16 6l11 9V26H5V15Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><strong>Haus</strong></label>
+        <label class="kachel"><input type="radio" name="art" value="mfh"><span class="ico" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 27V8h11v19M18 13h7v14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M11 13h3M11 18h3M11 23h3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span><strong>Mehrfamilienhaus</strong></label>
+        <label class="kachel"><input type="radio" name="art" value="grundstueck"><span class="ico" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6 22 16 8l10 14H6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 26h24" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span><strong>Grundstück</strong></label>
+      </div>
+    </section>
+
+    <section class="frage" data-step="flaeche" hidden>
+      <h2>Wie viel Fläche?</h2>
+      <label class="lbl" id="flaecheLbl" for="fFlaeche">Wohnfläche in m²</label>
+      <input id="fFlaeche" class="zahl-feld" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off">
+    </section>
+
+    <section class="frage" data-step="we" hidden>
+      <h2>Wie viele Wohnungen?</h2>
+      <label class="lbl" for="fWe">Anzahl</label>
+      <input id="fWe" class="zahl-feld" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off">
+    </section>
+
+    <section class="frage" data-step="grund" hidden>
+      <h2>Wie groß ist das Grundstück?</h2>
+      <label class="lbl" for="fGrund">Fläche in m²</label>
+      <input id="fGrund" class="zahl-feld" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off">
+    </section>
+
+    <section class="frage" data-step="geschoss" hidden>
+      <h2>Welches Geschoss?</h2>
+      <div class="kacheln" role="radiogroup" aria-label="Geschoss">
+        <label class="kachel"><input type="radio" name="geschoss" value="0"><strong>Erdgeschoss</strong></label>
+        <label class="kachel"><input type="radio" name="geschoss" value="1"><strong>1. Obergeschoss</strong></label>
+        <label class="kachel"><input type="radio" name="geschoss" value="2"><strong>2. Obergeschoss</strong></label>
+        <label class="kachel"><input type="radio" name="geschoss" value="3"><strong>3. Obergeschoss</strong></label>
+        <label class="kachel"><input type="radio" name="geschoss" value="5"><strong>4. OG oder höher</strong></label>
+        <label class="kachel"><input type="radio" name="geschoss" value="egal"><strong>Weiß ich nicht</strong></label>
+      </div>
+    </section>
+
+    <section class="frage" data-step="bauform" hidden>
+      <h2>Wie steht das Haus?</h2>
+      <div class="kacheln" role="radiogroup" aria-label="Bauform">
+        <label class="kachel"><input type="radio" name="bauform" value="frei"><strong>Freistehend</strong></label>
+        <label class="kachel"><input type="radio" name="bauform" value="reihe"><strong>Reihe oder Doppelhaus</strong></label>
+      </div>
+    </section>
+
+    <section class="frage" data-step="miete" hidden>
+      <h2>Wie hoch ist die Miete?</h2>
+      <p class="sub">Monatliche Nettokaltmiete, gesamtes Haus.</p>
+      <label class="lbl" for="fMiete">Euro pro Monat</label>
+      <input id="fMiete" class="zahl-feld" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off">
+      <div class="checkzeile">
+        <input type="checkbox" id="fMieteUnbekannt">
+        <label for="fMieteUnbekannt">Weiß ich nicht. Rechnet mit dem Marktansatz.</label>
+      </div>
+      <p class="hinweis-zeile" id="mieteHinweis" hidden>Als Nächstes reicht die Fläche.</p>
+    </section>
+
+    <section class="frage" data-step="nutzung" hidden>
+      <h2>Wie wird sie genutzt?</h2>
+      <div class="kacheln" role="radiogroup" aria-label="Nutzung">
+        <label class="kachel"><input type="radio" name="nutzung" value="selbst"><strong>Selbst genutzt</strong></label>
+        <label class="kachel"><input type="radio" name="nutzung" value="vermietet"><strong>Vermietet</strong></label>
+        <label class="kachel"><input type="radio" name="nutzung" value="leer"><strong>Leer</strong></label>
+      </div>
+    </section>
+
+    <section class="frage" data-step="gewerbe" hidden>
+      <h2>Gibt es Gewerbe?</h2>
+      <div class="kacheln" role="radiogroup" aria-label="Gewerbeanteil">
+        <label class="kachel"><input type="radio" name="gewerbe" value="0"><strong>Keins</strong><small>Reines Wohnhaus</small></label>
+        <label class="kachel"><input type="radio" name="gewerbe" value="bis50"><strong>Bis 50 %</strong><small>Wohn- und Geschäftshaus</small></label>
+        <label class="kachel"><input type="radio" name="gewerbe" value="ueber50"><strong>Über 50 %</strong></label>
+      </div>
+    </section>
+
+    <section class="frage" data-step="leer" hidden>
+      <h2>Steht etwas leer?</h2>
+      <div class="kacheln" role="radiogroup" aria-label="Leerstand">
+        <label class="kachel"><input type="radio" name="leerwahl" value="0"><strong>Nein</strong></label>
+        <label class="kachel"><input type="radio" name="leerwahl" value="1"><strong>Eine Wohnung</strong></label>
+        <label class="kachel"><input type="radio" name="leerwahl" value="3"><strong>Mehrere</strong></label>
+      </div>
+      <input id="fLeer" type="hidden" value="">
+    </section>
+
+    <section class="frage" data-step="zustand" hidden>
+      <h2>Wie ist der Zustand?</h2>
+      <div class="kacheln" role="radiogroup" aria-label="Zustand">
+        <label class="kachel"><input type="radio" name="zustand" value="gepflegt"><strong>Gepflegt</strong></label>
+        <label class="kachel"><input type="radio" name="zustand" value="normal"><strong>Normal</strong></label>
+        <label class="kachel"><input type="radio" name="zustand" value="renovierung"><strong>Renovierungsbedürftig</strong></label>
+        <label class="kachel"><input type="radio" name="zustand" value="sanierung"><strong>Sanierungsstau</strong></label>
+      </div>
+    </section>
+
+    <section class="frage" data-step="zustandLand" hidden>
+      <h2>Was steht drauf?</h2>
+      <div class="kacheln" role="radiogroup" aria-label="Grundstück">
+        <label class="kachel"><input type="radio" name="zustandLand" value="unbebaut"><strong>Unbebaut</strong></label>
+        <label class="kachel"><input type="radio" name="zustandLand" value="bebaut"><strong>Bebaut</strong></label>
+        <label class="kachel"><input type="radio" name="zustandLand" value="abriss"><strong>Abrissreif</strong></label>
+      </div>
+    </section>
+
+    <section class="frage" data-step="anlass" hidden>
+      <h2>Warum meldest du dich?</h2>
+      <div class="kacheln gitter" role="radiogroup" aria-label="Anlass">
+        <label class="kachel"><input type="radio" name="anlass" value="verkauf"><strong>Verkauf</strong></label>
+        <label class="kachel"><input type="radio" name="anlass" value="erbe"><strong>Erbe</strong></label>
+        <label class="kachel"><input type="radio" name="anlass" value="trennung"><strong>Trennung</strong></label>
+        <label class="kachel"><input type="radio" name="anlass" value="wert"><strong>Nur den Wert</strong></label>
+      </div>
+    </section>
+
+    <section class="frage" data-step="zeitpunkt" hidden>
+      <h2>Wann soll es passieren?</h2>
+      <div class="kacheln" role="radiogroup" aria-label="Zeitpunkt">
+        <label class="kachel"><input type="radio" name="zeitpunkt" value="jetzt"><strong>Jetzt</strong></label>
+        <label class="kachel"><input type="radio" name="zeitpunkt" value="monate12"><strong>In den nächsten 12 Monaten</strong></label>
+        <label class="kachel"><input type="radio" name="zeitpunkt" value="spaeter"><strong>Später</strong></label>
+      </div>
+    </section>
+
+    <section class="frage" data-step="ergebnis" hidden>
+      <h2>Deine Spanne</h2>
+      <div id="ergebnisInhalt" aria-live="polite"></div>
+      <div class="wahl">
+        <button type="button" class="wahl-btn kauf" id="wahlKauf">
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M8 16.5 13 22l11-12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span><strong>Wir kaufen direkt</strong><small>Angebot in 48 Stunden. Ohne Provision.</small></span>
+        </button>
+        <button type="button" class="wahl-btn" id="wahlMakler">
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 6 26 10v7c0 6-4 9-10 11C10 26 6 23 6 17v-7l10-4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+          <span><strong>Wir verkaufen für dich als Makler</strong><small>§34c. Wir vermarkten die Immobilie.</small></span>
+        </button>
+      </div>
+      <p class="disclaimer">Unverbindliche Modellrechnung auf Basis amtlicher Durchschnittswerte (BORIS.NRW, Gutachterausschuss, Grundstücksmarktbericht 2026). Keine Wertermittlung nach § 194 BauGB, kein Gutachten nach der ImmoWertV.</p>
+      <p class="quelle" id="quellenZeile"></p>
+    </section>
+
+    <section class="frage" data-step="kontakt" hidden>
+      <h2>Wohin geht die Antwort?</h2>
+      <div class="weg-merke"><span id="wegText">Wir kaufen direkt</span><button type="button" id="wegAendern">Ändern</button></div>
+      <div class="feld">
+        <label class="lbl" for="fVorname">Vorname</label>
+        <input id="fVorname" type="text" autocomplete="given-name" enterkeyhint="next" required>
+      </div>
+      <div class="feld">
+        <label class="lbl" for="fEmail">E-Mail</label>
+        <input id="fEmail" type="email" autocomplete="email" inputmode="email" enterkeyhint="next" required>
+      </div>
+      <div class="feld">
+        <label class="lbl" for="fTelefon">Telefon <span class="opt">optional</span></label>
+        <input id="fTelefon" type="tel" autocomplete="tel" inputmode="tel" enterkeyhint="next">
+      </div>
+      <div id="rueckrufBlock" hidden>
+        <p class="lbl">Wann dürfen wir anrufen?</p>
+        <div class="kacheln gitter" role="radiogroup" aria-label="Rückruf">
+          <label class="kachel"><input type="radio" name="rueckruf" value="vormittag"><strong>Vormittag</strong></label>
+          <label class="kachel"><input type="radio" name="rueckruf" value="nachmittag"><strong>Nachmittag</strong></label>
+          <label class="kachel"><input type="radio" name="rueckruf" value="abend"><strong>Abend</strong></label>
+          <label class="kachel"><input type="radio" name="rueckruf" value="egal"><strong>Egal</strong></label>
+        </div>
+      </div>
+      <div class="honigtopf" aria-hidden="true">
+        <label for="fWebsite">Website</label>
+        <input id="fWebsite" type="text" tabindex="-1" autocomplete="off">
+      </div>
+      <div class="einwilligung">
+        <input type="checkbox" id="fDsgvo" required>
+        <label for="fDsgvo">Ich habe die <a href="/datenschutz/">Datenschutzerklärung</a> gelesen. Meine Angaben werden zur Bearbeitung dieser Anfrage gespeichert.</label>
+      </div>
+      <div class="einwilligung">
+        <input type="checkbox" id="fTelefonJa">
+        <label for="fTelefonJa">Ja, ihr dürft mich unter der angegebenen Nummer anrufen oder per WhatsApp schreiben. Die Einwilligung kann ich jederzeit widerrufen. Nur nötig, wenn du eine Nummer einträgst.</label>
+      </div>
+    </section>
+
+    <section class="frage danke" data-step="danke" hidden>
+      <img class="danke-bild" src="/immo-cousins-hero.webp" width="96" height="96" alt="Navid und Mir Nikan Chenari">
+      <h2 id="dankeTitel">Danke.</h2>
+      <p id="dankeText"></p>
+      <p>
+        <a class="btn btn-petrol" id="dankeCal" href="https://calendly.com/nikan-heimkauf/45min">Termin mit Nikan</a>
+        <a class="btn btn-gold" id="dankeWhatsapp" hidden href="https://instagram.com/immo.cousins">Per WhatsApp schreiben</a>
+        <a class="btn btn-ghost" id="dankeInsta" href="https://instagram.com/immo.cousins">Instagram</a>
+      </p>
+      <p><button type="button" class="btn btn-ghost" id="neuStarten">Weitere Immobilie</button></p>
+    </section>
+
+    <input id="fBaujahr" type="hidden" value="">
+
+    <div class="funnel-nav" id="funnelNav">
+      <button type="button" class="btn btn-ghost" id="zurueck" hidden>Zurück</button>
+      <button type="button" class="btn btn-gold" id="weiter">Bodenrichtwert anzeigen</button>
+    </div>
+    <p class="form-fehler" id="funnelFehler" role="status"></p>
+  </form>
+</div>
+
+<section class="wrap faq-block" aria-labelledby="hFaqTool">
+  <h2 id="hFaqTool">Fragen</h2>
+  <div class="faq">
+    <details>
+      <summary>Kostet die Spanne etwas?</summary>
+      <p>Nein. Die grobe Spanne siehst du ohne E-Mail. Die E-Mail brauchen wir erst, wenn du ein Kaufangebot oder eine Vermarktung willst.</p>
+    </details>
+    <details>
+      <summary>Ist das ein Verkehrswert nach § 194 BauGB?</summary>
+      <p>Nein. Es ist eine unverbindliche Modellrechnung auf amtlichen Durchschnittswerten, kein Gutachten nach der ImmoWertV.</p>
+    </details>
+    <details>
+      <summary>Kauft ihr wirklich selbst?</summary>
+      <p>Ja. Hinter immo.cousins steht die Heimkauf CGN GmbH. Wenn wir selbst kaufen, gibt es keine Maklerprovision. Wenn du den Verkauf über uns als Makler willst, sagen wir das vorher.</p>
+    </details>
+    <details>
+      <summary>Wie schnell kommt das Angebot?</summary>
+      <p>Beim Direktankauf bekommst du ein Kaufangebot innerhalb von 48 Stunden, nachdem die Angaben da sind. Gemeldet haben wir uns in der Regel innerhalb von 24 Stunden.</p>
+    </details>
+    <details>
+      <summary>Welche Orte?</summary>
+      <p>Köln und der Rhein-Erft-Kreis, also unter anderem Hürth, Frechen, Brühl, Pulheim, Kerpen, Bergheim, Wesseling und Erftstadt. Weiter weg schauen wir uns den Bodenrichtwert an und sagen ehrlich, wenn uns die Vergleichszahlen fehlen.</p>
+    </details>
+  </div>
+</section>
