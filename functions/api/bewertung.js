@@ -9,7 +9,7 @@ import { bewerten, brwFuerArt } from '../../lib/bewerten.js';
 import { regionAus } from '../../lib/region.js';
 import { LIZENZ, LIZENZ_URL } from '../../lib/texte.js';
 
-const ARTEN = new Set(['etw', 'efh', 'mfh', 'grundstueck']);
+const ARTEN = new Set(['etw', 'efh', 'mfh', 'wgh', 'grundstueck']);
 
 function nummer(wert) {
   const n = Number(wert);
@@ -63,6 +63,10 @@ export async function onRequestPost(context) {
     lizenz: LIZENZ,
     lizenzUrl: LIZENZ_URL,
     quelle: ergebnis.quelle,
+    variante: ergebnis.variante || 'A',
+    ertragswert: ergebnis.ertragswert || null,
+    kennzeichen: ergebnis.kennzeichen || null,
+    jahresmiete: ergebnis.jahresmiete || null,
   });
 }
 

@@ -10,13 +10,26 @@ database_id = "5109a26d-c35b-4205-9e87-fe26523a7daf"
 
 # Geheimnisse nur im Pages-Projekt hinterlegen (Settings -> Variables and Secrets),
 # nie in dieser Datei. Das Repo ist öffentlich.
-#   RESEND_API_KEY       verschlüsselt, Versand
-#   MAIL_VON             z. B. "immo.cousins <lead@immocousins.de>"
+#   SMTP_HOST            Standard smtp.strato.de
+#   SMTP_PORT            Standard 465 (TLS). 587 nur mit SMTP_TLS=starttls
+#   SMTP_USER            Standard anfrage@immocousins.de
+#   SMTP_PASS            Secret, Passwort des Strato-Postfachs. Nie ins Repo.
+#   SMTP_TLS             on | starttls
+#   MAIL_VERSAND         smtp | resend | aus. Ohne Angabe: smtp, sobald SMTP_PASS da ist
+#   MAIL_VON             Standard "immo.cousins <anfrage@immocousins.de>"
 #   MAIL_AN              Investoren-Leads, Standard verwaltung@heimkauf.de
-#   MAIL_VERKAUF         Verkäufer-Leads, Standard chenari.immo@gmail.com
-#   ASANA_TOKEN          verschlüsselt, nur Verkäufer-Leads
-#   ASANA_PROJECT_GID    Standard 1217792767875702
-#   ASANA_SECTION_GID    Standard 1217792888034081
+#   MAIL_VERKAUF         Verkauf und Tippgeber, Standard chenari.immo@gmail.com
+#   RESEND_API_KEY       nur wenn MAIL_VERSAND=resend
+#   ASANA_TOKEN          verschlüsselt, Verkauf und Tippgeber
+#   ASANA_PROJECT_GID    Standard 1217792767875702 (Ankauf Projekte)
+#   ASANA_SECTION_GID    Standard 1217792888034081 (Eingang)
+#   UPLOAD_AKTIV         1 schaltet den Unterlagen-Upload ein, sonst aus
+#   UPLOAD_LOESCH_TAGE   Standard 90
+# R2-Bucket nicht aus diesem Repo anlegen. Erst bei Freigabe, Jurisdiction EU:
+#   npx wrangler r2 bucket create immocousins-unterlagen --jurisdiction eu
+# [[r2_buckets]]
+# binding = "UNTERLAGEN"
+# bucket_name = "immocousins-unterlagen"
 #   GEOCODER_URL         eigene Photon-Instanz, produktiv empfohlen
 #   GEOCODER_PROVIDER    photon | nominatim | none
 #                        ohne URL ist nominatim die Zwischenlösung, ein Aufruf

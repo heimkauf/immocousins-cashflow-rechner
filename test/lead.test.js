@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { onRequestPost } from '../functions/api/lead.js';
+import { entferneTransport, registriereTransport } from '../lib/smtp.js';
 
 function datenbank() {
   const sqls = [];
@@ -117,6 +118,55 @@ test('Verkäufer-Lead speichert Score und ruft Asana nur mit Token', async () =>
     assert.equal(asana, 1);
   } finally {
     globalThis.fetch = original;
+  }
+});
+
+test('Tippgeber legt Asana an und mailt intern, ohne Verkäufer-PDF', async () => {
+  const db = datenbank();
+  let asana = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).includes('asana.com')) asana += 1;
+    return new Response('{}', { status: 200 });
+  };
+  const runden = [];
+  registriereTransport('lead-tipp', () => {
+    const geschrieben = [];
+    const antworten = ['220 ready', '250 ehlo', '334 user', '334 pass', '235 ok', '250 from', '250 rcpt', '354 go', '250 queued'];
+    const runde = {
+      geschrieben,
+      async leseZeile() { return antworten.shift() || '250 ok'; },
+      async schreibe(text) { geschrieben.push(text); },
+      async schliesse() {},
+    };
+    runden.push(runde);
+    return runde;
+  });
+  try {
+    const res = await onRequestPost({
+      request: anfrage({
+        quelle: 'tippgeber',
+        vorname: 'Tim',
+        nachname: 'Tipp',
+        email: 'tim@example.com',
+        einwilligung: true,
+        objekt: { art: 'mfh', strasse: 'Venloer Straße', ort: 'Köln', plz: '50823' },
+      }),
+      env: { DB: db.DB, ASANA_TOKEN: 'test-token', SMTP_PASS: 'nicht-im-log', SMTP_TRANSPORT_ID: 'lead-tipp' },
+      async waitUntil(p) { await p; },
+    });
+    assert.equal(res.status, 200);
+    const kurz = db.sqls.find((e) => e.sql.startsWith('INSERT INTO leads '));
+    assert.equal(kurz.args[1], 'tippgeber');
+    assert.equal(asana, 1);
+    assert.equal(runden.length, 1);
+    const roh = runden[0].geschrieben.join('\n');
+    assert.match(roh, /chenari\.immo@gmail\.com/);
+    assert.equal(roh.includes('nicht-im-log'), false);
+    assert.equal(roh.includes('application/pdf'), false);
+  } finally {
+    globalThis.fetch = original;
+    entferneTransport('lead-tipp');
   }
 });
 

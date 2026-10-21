@@ -21,3 +21,7 @@ CREATE TABLE IF NOT EXISTS leads_verkauf (
 );
 
 CREATE INDEX IF NOT EXISTS idx_leads_verkauf_erstellt ON leads_verkauf(erstellt);
+
+-- Unterlagen liegen in R2, nicht in dieser Tabelle.
+-- Dateiname und Loeschfrist stehen im JSON-Feld payload.unterlagen.
+-- Loeschung: spaetestens UPLOAD_LOESCH_TAGE (Standard 90) nach dem Upload.

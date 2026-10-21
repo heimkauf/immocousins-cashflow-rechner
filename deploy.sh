@@ -32,13 +32,15 @@ done
 
 # Verkäufer-Funnel: SEO-Seiten und die gemeinsamen Dateien.
 # tool-inhalt.html ist nur die Bauvorlage und geht nicht mit.
-for d in immobilie-verkaufen-koeln hausbewertung-koeln mehrfamilienhaus-verkaufen-koeln \
-         erbimmobilie-verkaufen-koeln wohnung-verkaufen-koeln tippgeber impressum; do
-  mkdir -p "dist/$d"
-  cp "$d/index.html" "dist/$d/index.html"
-done
+while IFS= read -r pfad; do
+  [ -n "$pfad" ] || continue
+  rel=${pfad#/}
+  rel=${rel%/}
+  mkdir -p "dist/$rel"
+  cp "$rel/index.html" "dist/$rel/index.html"
+done < verkaufen-seiten.txt
 mkdir -p dist/verkaufen
-cp verkaufen/basis.css verkaufen/funnel.js verkaufen/tipp.js dist/verkaufen/
+cp verkaufen/basis.css verkaufen/funnel.js verkaufen/tipp.js verkaufen/danke.js verkaufen/track.js dist/verkaufen/
 
 echo "dist/ bereit:"
 find dist -type f | sed 's|^dist/|  |' | sort

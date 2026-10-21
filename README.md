@@ -169,7 +169,16 @@ keine Cookies**. Ein unsichtbares Honeypot-Feld fängt Bots ab.
 ./leads.sh anzahl   # nur die Anzahl
 ```
 
-### E-Mail-Benachrichtigung (aktiv)
+### E-Mail-Benachrichtigung (aktiv auf der Live-Seite)
+
+Die Absätze in diesem Abschnitt beschreiben den **derzeit ausgelieferten** Stand:
+Investoren-Leads gehen über Resend. Der Verkäufer-Funnel in diesem Branch stellt
+den Versand auf SMTP über das bestehende Strato-Postfach `anfrage@immocousins.de`
+um (`MAIL_VERSAND`, Standard `smtp`, sobald `SMTP_PASS` gesetzt ist). Solange der
+Branch nicht deployt ist, ändert sich an der Live-Seite nichts. Ein späterer
+Deploy ohne `SMTP_PASS` speichert Leads weiter, verschickt aber **keine** Mail
+mehr — auch keine Investoren-Benachrichtigung, bis das Secret gesetzt ist.
+Resend bleibt nur erreichbar, wenn `MAIL_VERSAND=resend` ausdrücklich gesetzt ist.
 
 Jeder Lead löst sofort eine Mail an `verwaltung@heimkauf.de` aus — Name,
 E-Mail, Telefon, Quelle, Zeit und ggf. Nachricht. Als Antwortadresse steht die
@@ -414,32 +423,41 @@ nutzt das —, muss `include:spf.protection.outlook.com` ergänzt werden.
 
 ## Verkäufer-Funnel
 
-Zweite Säule neben der Investoren-Startseite, unter anderem:
+Zweite Säule neben der Investoren-Startseite. Texte liegen in `lib/texte.js` und `scripts/inhalte.mjs`, der Build schreibt die HTML-Seiten.
 
 | Adresse | Inhalt |
 |---|---|
 | `/immobilie-verkaufen-koeln/` | Hub |
-| `/hausbewertung-koeln/` | Bewertung, acht Schritte |
+| `/hausbewertung-koeln/` | Funnel, Schritte 1–7; Danke ist Schritt 8 |
+| `/danke-verkauf/` | Danke-Seite, `noindex` |
 | `/mehrfamilienhaus-verkaufen-koeln/` | Mehrfamilienhaus |
-| `/erbimmobilie-verkaufen-koeln/` | Erbimmobilie |
-| `/wohnung-verkaufen-koeln/` | Eigentumswohnung |
-| `/tippgeber/` | Tippgeber, Bonus noch Platzhalter |
-| `/impressum/` | eigenes Impressum, Pflichtfelder noch offen |
+| `/wohnung-verkaufen-koeln/` | Wohnung |
+| `/geerbte-immobilie-verkaufen-koeln/` | Geerbte Immobilie (`/erbimmobilie-verkaufen-koeln/` leitet hierher) |
+| `/immobilie-mit-sanierungsstau-verkaufen/` | Sanierungsstau |
+| `/vermietete-immobilie-verkaufen-koeln/` | Vermietet |
+| `/mehrfamilienhaus-bewerten-koeln/` | MFH-Bewertung |
+| `/bodenrichtwert-koeln/` | Bodenrichtwert |
+| `/ueber-uns/` | Über uns, Foto-Platzhalter |
+| `/tippgeber/` | Tippgeber, Prämie bis zu 5.000 € |
+| `/impressum/` | Heimkauf CGN GmbH, Daten von heimkauf.de/impressum |
+| `/immobilie-verkaufen-koeln-ehrenfeld/` und weitere Stadtteile | Ehrenfeld, Nippes, Sülz, Kalk, Porz, Mülheim |
+| `/immobilie-verkaufen-huerth/` und weitere Umlandorte | Hürth, Frechen, Brühl, Pulheim, Kerpen |
 
-Die Investoren-Startseite bleibt. Im Footer steht ein zusätzlicher Link hierher.
+Die Investoren-Startseite bleibt.
 
-Bewertung und Leads laufen über Pages Functions: `POST /api/lage` (Bodenrichtwert), `POST /api/bewertung` (Spanne), `POST /api/lead` mit `quelle: "verkauf"` oder `"tippgeber"`. Investoren-Leads (`kontakt`, `rechner`) laufen unverändert. Verkaufsleads liegen zusätzlich in `leads_verkauf`; das `CREATE TABLE` macht die Function beim ersten Lead, `schema-verkauf.sql` ist dieselbe Anweisung zum Nachlesen.
+Bewertung und Leads: `POST /api/lage`, `POST /api/bewertung`, `POST /api/lead` mit `quelle: "verkauf"` oder `"tippgeber"`. Investoren-Leads (`kontakt`, `rechner`) bleiben im selben Endpunkt. Verkaufsleads liegen zusätzlich in `leads_verkauf`.
 
-Richtwerte kommen serverseitig von BORIS.NRW (WMS GetFeatureInfo, Datenlizenz Deutschland Zero 2.0). Für Mehrfamilienhäuser: Jahresnettokaltmiete × Faktor aus dem Grundstücksmarktbericht Köln 2026. Kein Autocomplete. Produktiv `GEOCODER_URL` auf eine eigene Photon-Instanz setzen. Ohne diese URL löst ein einzelner Aufruf pro Adresse über Nominatim auf.
+Interne Benachrichtigung für Verkauf und Tippgeber geht an `MAIL_VERKAUF`, Standard `chenari.immo@gmail.com`, über SMTP (`SMTP_HOST` Standard `smtp.strato.de`, Port 465, Absender `anfrage@immocousins.de`). `ASANA_TOKEN` legt in beiden Fällen eine Aufgabe in „Ankauf Projekte“, Abschnitt Eingang, an. Fehlt ein Schlüssel, wird der Lead trotzdem gespeichert. Secrets nur als Umgebungsvariablen, nie im Repo.
 
-Asana und die Mail an `chenari.immo@gmail.com` laufen nur, wenn `ASANA_TOKEN` bzw. `RESEND_API_KEY` gesetzt sind. Fehlt ein Schlüssel, wird der Lead trotzdem gespeichert. Schlüssel nicht ins Repo.
+Der Unterlagen-Upload (`POST /api/unterlagen`) ist aus, solange nicht `UPLOAD_AKTIV=1` **und** ein R2-Binding `UNTERLAGEN` gesetzt sind. Löschfrist standardmäßig 90 Tage (`UPLOAD_LOESCH_TAGE`). Das Binding in `wrangler.toml` ist auskommentiert, damit ein Deploy keinen Bucket erzwingt.
 
 ```bash
+node scripts/build-seiten.mjs
 node --test
-node scripts/vorschau.mjs
+VORSCHAU_FIXTURE=1 node scripts/vorschau.mjs
 ```
 
-Die Vorschau spricht die echten BORIS-Dienste an und speichert Leads nur im Speicher des Prozesses. `./deploy.sh` baut `dist/`, ein Deploy ist damit nicht verbunden.
+`VORSCHAU_FIXTURE=1` beantwortet Lage und Bewertung lokal, ohne BORIS. Ohne das Flag spricht die Vorschau die echten Dienste an. Leads bleiben im Speicher des Prozesses. `./deploy.sh` baut nur `dist/` und deployt nicht.
 
 ## Offene Punkte
 
