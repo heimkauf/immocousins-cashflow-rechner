@@ -193,6 +193,20 @@
     }
   }
 
+  var pill = document.querySelector('.wa-schwebend');
+  var waechter = document.querySelectorAll('.zentriert .cta-paar, .siegel');
+  if (pill && waechter.length && 'IntersectionObserver' in window) {
+    var offen = new Set();
+    var pillIO = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) offen.add(entry.target);
+        else offen.delete(entry.target);
+      });
+      pill.classList.toggle('ist-weg', offen.size > 0);
+    }, { threshold: 0.34 });
+    waechter.forEach(function (el) { pillIO.observe(el); });
+  }
+
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden && !laufend && spur && !reduce) rahmenStart();
   });

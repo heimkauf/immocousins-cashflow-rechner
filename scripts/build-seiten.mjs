@@ -19,10 +19,10 @@ const NAV = [
 
 const HERO = `<figure class="hero-bild">
     <span class="hero-rahmen">
-      <img src="/verkaufen/bilder/hero-800.webp" srcset="/verkaufen/bilder/hero-800.webp 800w, /verkaufen/bilder/hero-1600.webp 1600w" sizes="(min-width: 900px) 920px, 100vw" width="1600" height="1067" alt="Begrünte Wohnstraße mit Altbauten" fetchpriority="high" decoding="async">
+      <img src="/verkaufen/bilder/hero-800.webp" srcset="/verkaufen/bilder/hero-800.webp 800w, /verkaufen/bilder/hero-1600.webp 1600w" sizes="(min-width: 900px) 920px, 100vw" width="1600" height="1112" alt="Kölner Dom hinter der Hohenzollernbrücke" fetchpriority="high" decoding="async">
     </span>
     <span class="hero-wasch" aria-hidden="true"></span>
-    <p class="credit">Foto: <a href="https://unsplash.com/license" rel="noopener">Unsplash-Lizenz</a></p>
+    <p class="credit">Foto: <a href="https://commons.wikimedia.org/wiki/File:Hohenzollernbr%C3%BCcke_K%C3%B6ln.jpg" rel="noopener">Thomas Wolf</a>, <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.de" rel="noopener">CC BY-SA 3.0</a></p>
   </figure>`;
 
 const WA_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#22C55E" d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.7-1.2A9 9 0 1 0 12 3Zm0 1.6a7.4 7.4 0 0 1 6.4 11.2l-.2.4.4 1.6-1.6-.4-.4.2A7.4 7.4 0 1 1 12 4.6Z"/></svg>';
@@ -275,9 +275,9 @@ function siegel() {
   </ul>`;
 }
 
-function fliese(href, kategorie, titel, pos) {
+function fliese(href, kategorie, titel, src) {
   return `<a class="fliese" href="${href}">
-    <img src="/verkaufen/bilder/hero-800.webp" width="800" height="533" alt="" style="object-position:${pos}">
+    <img src="${src}" width="1200" height="800" alt="" loading="lazy" decoding="async">
     <span class="kicker">${kategorie}</span>
     <strong>${titel}</strong>
   </a>`;
@@ -359,10 +359,11 @@ ${siegel()}
 ${zahlenBlock()}
 ${ablauf()}
 <section class="fliesen reveal" aria-label="Wobei wir helfen">
-  ${fliese('/wohnung-verkaufen-koeln/', 'Wohnung', 'Richtwert der Zone', '50% 40%')}
-  ${fliese('/mehrfamilienhaus-verkaufen-koeln/', 'Mehrfamilienhaus', 'Miete mal Faktor', '30% 70%')}
-  ${fliese('/erbimmobilie-verkaufen-koeln/', 'Erbe', 'Diskret, ohne Entrümpeln', '70% 30%')}
+  ${fliese('/wohnung-verkaufen-koeln/', 'Wohnung', 'Richtwert der Zone', '/verkaufen/bilder/kachel-strasse.webp')}
+  ${fliese('/mehrfamilienhaus-verkaufen-koeln/', 'Mehrfamilienhaus', 'Miete mal Faktor', '/verkaufen/bilder/kachel-viertel.webp')}
+  ${fliese('/erbimmobilie-verkaufen-koeln/', 'Erbe', 'Diskret, ohne Entrümpeln', '/verkaufen/bilder/kachel-haeuser.webp')}
 </section>
+<p class="bildnachweis">Weitere Aufnahmen aus Köln: <a href="https://commons.wikimedia.org/wiki/File:Severinstra%C3%9Fe_K%C3%B6ln,_Richtung_Norden-8791.jpg" rel="noopener">Severinstraße</a>, Raimond Spekking, CC BY-SA 4.0 · <a href="https://commons.wikimedia.org/wiki/File:K%C3%B6ln_Agnesviertel_I.JPG" rel="noopener">Agnesviertel</a>, Willy Horsch, CC BY 3.0 · <a href="https://commons.wikimedia.org/wiki/File:Robert-Koch-Str._Koeln-Lindenthal.jpg" rel="noopener">Lindenthal</a>, CC0</p>
 <article class="gruender reveal" aria-labelledby="wer">
   <img src="/immo-cousins-hero.webp" width="224" height="224" alt="Navid und Mir Nikan Chenari">
   <h2 id="wer" class="maske">${maskeText('Navid und Nikan')}</h2>
